@@ -41,6 +41,8 @@ export interface Me {
   timezone: string;
   /** Час напоминания в боте, null — выключено. */
   reminderHour: number | null;
+  /** Прибавлять к норме калории за шаги. */
+  addStepsKcal: boolean;
   targetKcal: number | null;
   targetProtein: number | null;
   targetFat: number | null;

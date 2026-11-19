@@ -45,6 +45,15 @@ export class UsersService {
     return user!;
   }
 
+  async setStepsKcal(userId: string, addStepsKcal: boolean): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set({ addStepsKcal })
+      .where(eq(users.id, userId))
+      .returning();
+    return user!;
+  }
+
   async setReminders(userId: string, reminderHour: number | null): Promise<User> {
     const [user] = await this.db
       .update(users)

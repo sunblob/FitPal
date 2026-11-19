@@ -217,9 +217,17 @@ export function DiaryPage({ me }: { me: Me }) {
             target={target?.carbs}
           />
         </div>
+        {day && (day.fiberSugar || day.stepsBonusKcal > 0) && (
+          <div className="day-extra muted small">
+            {day.fiberSugar && (
+              <span>{L.diary.fiberSugar(day.fiberSugar.fiber, day.fiberSugar.sugar)}</span>
+            )}
+            {day.stepsBonusKcal > 0 && <span>{L.diary.stepsBonus(day.stepsBonusKcal)}</span>}
+          </div>
+        )}
       </section>
 
-      <StepsCard date={date} weightKg={me.weightKg} />
+      <StepsCard date={date} weightKg={me.weightKg} onSaved={load} />
       <WaterCard date={date} weightKg={me.weightKg} />
 
       {workout.logs && workout.logs.length > 0 && (

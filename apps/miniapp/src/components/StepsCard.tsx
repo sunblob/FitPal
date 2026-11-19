@@ -5,7 +5,7 @@ import { api, put } from '../lib/api';
 import { Icon } from './Icon';
 
 /** Шаги за выбранный день с ручным вводом. */
-export function StepsCard(props: { date: string; weightKg: number | null }) {
+export function StepsCard(props: { date: string; weightKg: number | null; onSaved?: () => void }) {
   const { date } = props;
   const [steps, setSteps] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
@@ -32,6 +32,7 @@ export function StepsCard(props: { date: string; weightKg: number | null }) {
       const saved = await put<StepLogDto>('/steps', { steps: parsed, date });
       setSteps(saved.steps);
       setEditing(false);
+      props.onSaved?.();
     } finally {
       setBusy(false);
     }

@@ -85,6 +85,13 @@
       "when": 1795099965727,
       "tag": "0011_weekly_report",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795100158688,
+      "tag": "0012_fiber_sugar_steps_kcal",
+      "breakpoints": true
     }
   ]
 }

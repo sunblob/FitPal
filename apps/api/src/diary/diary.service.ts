@@ -3,7 +3,10 @@ import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import {
   MEAL_TYPES,
   rescaleNutrients,
+  scaleExtras,
   scaleNutrients,
+  stepsBonusKcal,
+  sumExtras,
   streakDto,
   todayIn,
   addDays,
@@ -20,7 +23,14 @@ import {
   type UpdateDiaryEntry,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
-import { closedDays, diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
+import {
+  closedDays,
+  diaryEntries,
+  foods,
+  stepLogs,
+  type DiaryEntry,
+  type User,
+} from '../db/schema.js';
 
 type FoodLook = {
   name: string;
@@ -46,7 +56,14 @@ function toEntryDto(e: DiaryEntry, food: FoodLook, lang: Language): DiaryEntryDt
     meal: e.meal,
     grams: e.grams,
     eatenAt: e.eatenAt.toISOString(),
-    nutrients: { kcal: e.kcal, protein: e.protein, fat: e.fat, carbs: e.carbs },
+    nutrients: {
+      kcal: e.kcal,
+      protein: e.protein,
+      fat: e.fat,
+      carbs: e.carbs,
+      fiber: e.fiber,
+      sugar: e.sugar,
+    },
     imageUrl: food?.imageUrl ?? null,
     category: food?.category ?? null,
   };
@@ -99,11 +116,22 @@ export class DiaryService {
       .from(closedDays)
       .where(and(eq(closedDays.userId, user.id), eq(closedDays.date, date)));
 
+    let stepsBonus = 0;
+    if (user.addStepsKcal) {
+      const [steps] = await this.db
+        .select({ steps: stepLogs.steps })
+        .from(stepLogs)
+        .where(and(eq(stepLogs.userId, user.id), eq(stepLogs.date, date)));
+      stepsBonus = steps ? stepsBonusKcal(steps.steps, user.weightKg) : 0;
+    }
+
     return {
       date,
       closed: closed != null,
-      target,
+      target: target && { ...target, kcal: target.kcal + stepsBonus },
       totals: sumNutrients(entries.map((e) => e.nutrients)),
+      fiberSugar: sumExtras(entries.map((e) => e.nutrients)),
+      stepsBonusKcal: stepsBonus,
       meals,
     };
   }
@@ -119,6 +147,7 @@ export class DiaryService {
         meal: input.meal as MealType,
         grams: input.grams,
         ...n,
+        ...scaleExtras(input.per100g, input.grams),
         ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
       })
       .returning();
@@ -238,6 +267,8 @@ export class DiaryService {
         protein: e.protein,
         fat: e.fat,
         carbs: e.carbs,
+        fiber: e.fiber,
+        sugar: e.sugar,
         eatenAt: sql`(${input.toDate}::date + (${e.eatenAt.toISOString()}::timestamptz at time zone ${tz})::time) at time zone ${tz}`,
       })),
     );
@@ -270,11 +301,23 @@ export class DiaryService {
             input.grams,
           )
         : {};
+    // Клетчатка и сахар пересчитываются пропорционально весу, null остаётся null
+    const extras =
+      input.grams != null && input.grams !== current.grams && current.grams > 0
+        ? scaleExtras(
+            {
+              fiber: current.fiber == null ? null : (current.fiber * 100) / current.grams,
+              sugar: current.sugar == null ? null : (current.sugar * 100) / current.grams,
+            },
+            input.grams,
+          )
+        : {};
     const [entry] = await this.db
       .update(diaryEntries)
       .set({
         ...(input.grams != null ? { grams: input.grams } : {}),
         ...nutrients,
+        ...extras,
         ...(input.meal ? { meal: input.meal } : {}),
         ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
       })

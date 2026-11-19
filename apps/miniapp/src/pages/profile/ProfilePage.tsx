@@ -83,6 +83,14 @@ export function ProfilePage(props: {
     }
   }
 
+  async function changeStepsKcal(addStepsKcal: boolean) {
+    try {
+      props.onMeChanged(await put<Me>('/me/steps-kcal', { addStepsKcal }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   async function save() {
     if (!parsed.success || wrongDirection) return;
     setSaving(true);
@@ -133,6 +141,18 @@ export function ProfilePage(props: {
               ))}
             </select>
             <p className="muted small">{L.profile.remindersHint}</p>
+          </section>
+
+          <section className="card form">
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={props.me.addStepsKcal}
+                onChange={(e) => void changeStepsKcal(e.target.checked)}
+              />
+              {L.profile.stepsKcal}
+            </label>
+            <p className="muted small">{L.profile.stepsKcalHint}</p>
           </section>
         </>
       )}

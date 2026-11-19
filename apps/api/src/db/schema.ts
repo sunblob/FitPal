@@ -73,6 +73,8 @@ export const users = pgTable('users', {
   lastReminderOn: date('last_reminder_on', { mode: 'string' }),
   /** Местная дата последнего воскресного итога недели. */
   lastWeeklyReportOn: date('last_weekly_report_on', { mode: 'string' }),
+  /** Прибавлять к норме калории за шаги сверх обычных 5000. */
+  addStepsKcal: boolean('add_steps_kcal').notNull().default(false),
   ...timestamps,
 });
 
@@ -104,6 +106,9 @@ export const foods = pgTable(
     protein: real('protein').notNull(),
     fat: real('fat').notNull(),
     carbs: real('carbs').notNull(),
+    /** Клетчатка и сахар на 100 г; null — нет данных. */
+    fiber: real('fiber'),
+    sugar: real('sugar'),
     ...timestamps,
   },
   (t) => [index('foods_name_idx').on(t.name)],
@@ -125,6 +130,8 @@ export const diaryEntries = pgTable(
     protein: real('protein').notNull(),
     fat: real('fat').notNull(),
     carbs: real('carbs').notNull(),
+    fiber: real('fiber'),
+    sugar: real('sugar'),
     eatenAt: timestamp('eaten_at', { withTimezone: true }).notNull().defaultNow(),
     ...timestamps,
   },

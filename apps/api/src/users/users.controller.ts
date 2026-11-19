@@ -4,6 +4,7 @@ import type { User } from '../db/schema.js';
 import { UpdateLanguageDto } from './dto/update-language.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UpdateRemindersDto } from './dto/update-reminders.dto.js';
+import { UpdateStepsKcalDto } from './dto/update-steps-kcal.dto.js';
 import { UsersService } from './users.service.js';
 
 @Controller('me')
@@ -24,6 +25,11 @@ export class UsersController {
   @Put('reminders')
   updateReminders(@CurrentUser() user: User, @Body() body: UpdateRemindersDto) {
     return this.users.setReminders(user.id, body.reminderHour);
+  }
+
+  @Put('steps-kcal')
+  updateStepsKcal(@CurrentUser() user: User, @Body() body: UpdateStepsKcalDto) {
+    return this.users.setStepsKcal(user.id, body.addStepsKcal);
   }
 
   @Put('language')
