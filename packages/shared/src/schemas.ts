@@ -138,3 +138,9 @@ export interface DiaryDayDto {
   totals: Nutrients;
   meals: Record<MealType, { entries: DiaryEntryDto[]; totals: Nutrients }>;
 }
+
+/** EAN-8, UPC-A, EAN-13, GTIN-14. */
+export const barcodeSchema = z.string().regex(/^\d{8,14}$/, 'Invalid barcode');
+
+export const barcodeParamSchema = z.object({ code: barcodeSchema });
+export type BarcodeParam = z.infer<typeof barcodeParamSchema>;

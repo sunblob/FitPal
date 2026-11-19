@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import type { User } from '../db/schema.js';
+import { BarcodeParamDto } from './dto/barcode-param.dto.js';
 import { CreateFoodDto } from './dto/create-food.dto.js';
 import { FoodSearchQueryDto } from './dto/food-search-query.dto.js';
 import { FoodsService } from './foods.service.js';
@@ -13,6 +14,11 @@ export class FoodsController {
   @Get()
   search(@CurrentUser() user: User, @Query() query: FoodSearchQueryDto) {
     return this.foods.search(user.id, query.q);
+  }
+
+  @Get('barcode/:code')
+  byBarcode(@Param() { code }: BarcodeParamDto) {
+    return this.foods.byBarcode(code);
   }
 
   @Post()

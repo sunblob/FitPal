@@ -13,6 +13,8 @@ export const envSchema = z.object({
   PUBLIC_API_URL: unsetIfEmpty(z.string().url().optional()),
   TELEGRAM_WEBHOOK_SECRET: unsetIfEmpty(z.string().optional()),
   MINIAPP_URL: unsetIfEmpty(z.string().url().optional()),
+  /** База Open Food Facts для поиска продуктов и штрихкодов. */
+  OFF_BASE_URL: unsetIfEmpty(z.string().url().default('https://world.openfoodfacts.org')),
   ANTHROPIC_API_KEY: unsetIfEmpty(z.string().optional()),
   /** Модель Claude для генерации планов и переводов. */
   ANTHROPIC_MODEL: unsetIfEmpty(z.string().default('claude-opus-5-5')),
