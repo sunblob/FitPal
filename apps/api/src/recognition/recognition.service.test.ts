@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeRecognition } from './recognition.service.js';
+import { sanitizeLabel, sanitizeRecognition } from './recognition.service.js';
 
 test('sanitizeRecognition clamps values and drops empty items', () => {
   const result = sanitizeRecognition({
@@ -23,4 +23,22 @@ test('sanitizeRecognition clamps values and drops empty items', () => {
     ],
     note: null,
   });
+});
+
+test('sanitizeLabel clamps nutrients and trims text', () => {
+  assert.deepEqual(
+    sanitizeLabel({
+      name: '  Tatranky ',
+      brand: '',
+      per100g: { kcal: 532.6, protein: 6.04, fat: 130, carbs: 60.56 },
+      note: null,
+    }),
+    {
+      name: 'Tatranky',
+      brand: null,
+      per100g: { kcal: 533, protein: 6, fat: 100, carbs: 60.6 },
+      note: null,
+    },
+  );
+  assert.equal(sanitizeLabel({ name: null, brand: null, per100g: null, note: ' x ' }).note, 'x');
 });

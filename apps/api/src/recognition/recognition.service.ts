@@ -1,12 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
+  nutritionLabelSchema,
   photoRecognitionSchema,
   type ImageMediaType,
+  type NutritionLabel,
   type PhotoRecognition,
   type RecognizedFood,
 } from '@fitpal/shared';
 import { ClaudeService } from '../ai/claude.service.js';
 import {
+  LABEL_PROMPT,
+  LABEL_SYSTEM,
   RECOGNITION_SYSTEM,
   TEXT_RECOGNITION_SYSTEM,
   recognitionPrompt,
@@ -31,6 +35,25 @@ export function sanitizeRecognition(raw: PhotoRecognition): PhotoRecognition {
       },
     }));
   return { items, note: raw.note?.trim() || null };
+}
+
+/** Чистит ответ по этикетке: границы КБЖУ и пустые строки. */
+export function sanitizeLabel(raw: NutritionLabel): NutritionLabel {
+  const text = (s: string | null) => s?.trim().slice(0, 200) || null;
+  const n = raw.per100g;
+  return {
+    name: text(raw.name),
+    brand: text(raw.brand),
+    per100g: n
+      ? {
+          kcal: Math.round(clamp(n.kcal, 0, 900)),
+          protein: round1(clamp(n.protein, 0, 100)),
+          fat: round1(clamp(n.fat, 0, 100)),
+          carbs: round1(clamp(n.carbs, 0, 100)),
+        }
+      : null,
+    note: raw.note?.trim() || null,
+  };
 }
 
 /**
@@ -61,6 +84,22 @@ export class RecognitionService {
 
   get enabled() {
     return this.claude.enabled;
+  }
+
+  async readLabel(
+    userId: string,
+    image: { mediaType: ImageMediaType; data: string },
+  ): Promise<NutritionLabel> {
+    this.consume(userId);
+    const raw = await this.claude.parse({
+      schema: nutritionLabelSchema,
+      system: LABEL_SYSTEM,
+      prompt: LABEL_PROMPT,
+      images: [image],
+      effort: 'low',
+      maxTokens: 2000,
+    });
+    return sanitizeLabel(raw);
   }
 
   async recognize(

@@ -167,20 +167,37 @@ export class FoodsService implements OnApplicationBootstrap {
     return rows.map((r) => toFoodDto(r.food));
   }
 
+  /**
+   * Свой продукт. Со штрихкодом (товар не нашёлся при скане) он становится общим для поиска
+   * по штрихкоду: следующий скан этого товара у любого пользователя найдёт его сразу.
+   * В текстовом поиске он по-прежнему виден только владельцу.
+   */
   async create(userId: string, input: CreateFood): Promise<FoodDto> {
+    if (input.barcode) {
+      const existing = await this.db.query.foods.findFirst({
+        where: eq(foods.barcode, input.barcode),
+      });
+      // Кто-то успел добавить этот штрихкод раньше: отдаём существующий продукт
+      if (existing) return toFoodDto(existing);
+    }
     const [food] = await this.db
       .insert(foods)
       .values({
         name: input.name,
         brand: input.brand ?? null,
-        // Штрихкод уникален глобально, у своих продуктов его не храним, чтобы не конфликтовать с общей базой
-        barcode: null,
+        barcode: input.barcode ?? null,
         source: 'manual',
         ownerId: userId,
         searchText: buildSearchText({ name: input.name, brand: input.brand }),
         ...input.per100g,
       })
+      .onConflictDoNothing({ target: foods.barcode })
       .returning();
-    return toFoodDto(food!);
+    if (food) return toFoodDto(food);
+    // Гонка: тот же штрихкод вставили параллельно
+    const winner = await this.db.query.foods.findFirst({
+      where: eq(foods.barcode, input.barcode!),
+    });
+    return toFoodDto(winner!);
   }
 }
