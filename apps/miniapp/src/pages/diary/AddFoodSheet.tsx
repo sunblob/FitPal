@@ -34,7 +34,7 @@ type Mode =
   | { kind: 'photo' }
   | { kind: 'text'; initial: string };
 
-const PORTIONS = [50, 100, 150, 200, 300];
+export const PORTIONS = [50, 100, 150, 200, 300];
 
 interface Props {
   meal: MealType;
@@ -497,7 +497,7 @@ function ManualFood(props: {
   );
 }
 
-function NutrientsLine({ n }: { n: Nutrients }) {
+export function NutrientsLine({ n }: { n: Nutrients }) {
   return (
     <div className="nutrients">
       <div className="nutrient nutrient-kcal">

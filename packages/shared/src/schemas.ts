@@ -65,6 +65,17 @@ export const createDiaryEntrySchema = z.object({
 });
 export type CreateDiaryEntry = z.infer<typeof createDiaryEntrySchema>;
 
+/** Правка записи дневника: вес порции, приём пищи, время. КБЖУ пересчитываются по весу. */
+export const updateDiaryEntrySchema = z
+  .object({
+    grams: z.number().positive().max(5000),
+    meal: mealTypeSchema,
+    eatenAt: z.iso.datetime(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+export type UpdateDiaryEntry = z.infer<typeof updateDiaryEntrySchema>;
+
 export const logWeightSchema = z.object({
   weightKg: z.number().min(30).max(300),
   /** Дата в формате YYYY-MM-DD, по умолчанию сегодня. */

@@ -54,6 +54,24 @@ export function scaleNutrients(per100g: Nutrients, grams: number): Nutrients {
   };
 }
 
+/**
+ * КБЖУ записи после смены веса порции. В записи хранится только итог порции, поэтому
+ * восстанавливаем значения на 100 г из неё и считаем заново.
+ */
+export function rescaleNutrients(n: Nutrients, fromGrams: number, toGrams: number): Nutrients {
+  if (fromGrams <= 0) return n;
+  const per100 = (v: number) => (v * 100) / fromGrams;
+  return scaleNutrients(
+    {
+      kcal: per100(n.kcal),
+      protein: per100(n.protein),
+      fat: per100(n.fat),
+      carbs: per100(n.carbs),
+    },
+    toGrams,
+  );
+}
+
 export function sumNutrients(items: Nutrients[]): Nutrients {
   return items.reduce(
     (acc, n) => ({

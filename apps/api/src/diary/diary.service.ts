@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import {
   MEAL_TYPES,
+  rescaleNutrients,
   scaleNutrients,
   sumNutrients,
   type CreateDiaryEntry,
@@ -9,6 +10,7 @@ import {
   type DiaryEntryDto,
   type Language,
   type MealType,
+  type UpdateDiaryEntry,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
 import { diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
@@ -107,7 +109,50 @@ export class DiaryService {
         ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
       })
       .returning();
-    if (!entry!.foodId) return toEntryDto(entry!, null, lang);
+    return this.withFood(entry!, lang);
+  }
+
+  /** Меняет вес, приём пищи или время записи. При смене веса КБЖУ пересчитываются. */
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateDiaryEntry,
+    lang: Language,
+  ): Promise<DiaryEntryDto> {
+    const [current] = await this.db
+      .select()
+      .from(diaryEntries)
+      .where(and(eq(diaryEntries.id, id), eq(diaryEntries.userId, userId)));
+    if (!current) throw new NotFoundException();
+
+    const nutrients =
+      input.grams != null && input.grams !== current.grams
+        ? rescaleNutrients(
+            {
+              kcal: current.kcal,
+              protein: current.protein,
+              fat: current.fat,
+              carbs: current.carbs,
+            },
+            current.grams,
+            input.grams,
+          )
+        : {};
+    const [entry] = await this.db
+      .update(diaryEntries)
+      .set({
+        ...(input.grams != null ? { grams: input.grams } : {}),
+        ...nutrients,
+        ...(input.meal ? { meal: input.meal } : {}),
+        ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
+      })
+      .where(and(eq(diaryEntries.id, id), eq(diaryEntries.userId, userId)))
+      .returning();
+    return this.withFood(entry!, lang);
+  }
+
+  private async withFood(entry: DiaryEntry, lang: Language): Promise<DiaryEntryDto> {
+    if (!entry.foodId) return toEntryDto(entry, null, lang);
     const [food] = await this.db
       .select({
         name: foods.name,
@@ -116,8 +161,8 @@ export class DiaryService {
         category: foods.category,
       })
       .from(foods)
-      .where(eq(foods.id, entry!.foodId));
-    return toEntryDto(entry!, food ?? null, lang);
+      .where(eq(foods.id, entry.foodId));
+    return toEntryDto(entry, food ?? null, lang);
   }
 
   async remove(userId: string, id: string): Promise<void> {
