@@ -72,6 +72,10 @@ export const foods = pgTable(
     searchText: text('search_text'),
     /** Порядок во встроенном справочнике: самые обычные продукты группы идут первыми. */
     sortOrder: integer('sort_order'),
+    /** Картинка товара из Open Food Facts (маленькая, с их CDN). */
+    imageUrl: text('image_url'),
+    /** Группа встроенного справочника (vegetables, dairy…), по ней Mini App выбирает иконку. */
+    category: text('category'),
     source: foodSourceEnum('source').notNull(),
     ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
     kcal: real('kcal').notNull(),
@@ -176,6 +180,25 @@ export const workoutPlans = pgTable(
   (t) => [index('workout_plans_user_idx').on(t.userId, t.createdAt)],
 );
 
+/** Отметки «упражнение сделано»: одна запись на упражнение в день. */
+export const exerciseLogs = pgTable(
+  'exercise_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    exerciseId: text('exercise_id')
+      .notNull()
+      .references(() => exercises.id, { onDelete: 'cascade' }),
+    planId: uuid('plan_id').references(() => workoutPlans.id, { onDelete: 'set null' }),
+    sets: integer('sets'),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('exercise_logs_user_date_exercise_idx').on(t.userId, t.date, t.exerciseId)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Food = typeof foods.$inferSelect;
 export type DiaryEntry = typeof diaryEntries.$inferSelect;
@@ -183,3 +206,4 @@ export type WeightLog = typeof weightLogs.$inferSelect;
 export type StepLog = typeof stepLogs.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type WorkoutPlan = typeof workoutPlans.$inferSelect;
+export type ExerciseLog = typeof exerciseLogs.$inferSelect;

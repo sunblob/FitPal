@@ -43,7 +43,7 @@ export function App() {
     <>
       {tab === 'diary' && <DiaryPage me={me} />}
       {tab === 'weight' && <WeightPage me={me} onChanged={reloadMe} />}
-      {tab === 'workouts' && <WorkoutsPage />}
+      {tab === 'workouts' && <WorkoutsPage me={me} />}
       {tab === 'profile' && (
         <ProfilePage
           me={me}

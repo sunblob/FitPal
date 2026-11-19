@@ -7,12 +7,16 @@ import {
   type FoodDto,
   type MealType,
   type Nutrients,
+  type NutritionLabel,
   type RecognizedFood,
 } from '@fitpal/shared';
+import { FoodThumb } from '../../components/FoodThumb';
 import { Icon } from '../../components/Icon';
 import { PhotoRecognize } from '../../components/PhotoRecognize';
+import { aiErrorText } from '../../components/RecognizedItems';
 import { TextRecognize } from '../../components/TextRecognize';
 import { api, post } from '../../lib/api';
+import { prepareImage } from '../../lib/image';
 
 // Сканер тянет wasm на ~1 МБ, грузим его только когда он нужен
 const BarcodeScanner = lazy(() =>
@@ -25,7 +29,7 @@ type Mode =
   | { kind: 'lookup'; code: string }
   | { kind: 'notFound'; code: string }
   | { kind: 'portion'; food: FoodDto }
-  | { kind: 'manual' }
+  | { kind: 'manual'; barcode?: string }
   | { kind: 'photo' }
   | { kind: 'text'; initial: string };
 
@@ -162,15 +166,22 @@ export function AddFoodSheet(props: Props) {
           <p>
             Продукта со штрихкодом <strong>{mode.code}</strong> нет в базе.
           </p>
-          <button className="primary" onClick={() => setMode({ kind: 'manual' })}>
-            Ввести КБЖУ вручную
+          <p className="muted small">
+            Добавь его сам: название и КБЖУ с упаковки (можно сфотографировать этикетку). В
+            следующий раз этот штрихкод найдётся сразу.
+          </p>
+          <button
+            className="primary"
+            onClick={() => setMode({ kind: 'manual', barcode: mode.code })}
+          >
+            Добавить продукт
           </button>
           <button className="ghost add" onClick={() => setMode({ kind: 'scan' })}>
             Сканировать ещё раз
           </button>
         </div>
       )}
-      {mode.kind === 'manual' && <ManualFood onAdd={addEntry} />}
+      {mode.kind === 'manual' && <ManualFood barcode={mode.barcode} onAdd={addEntry} />}
       {mode.kind === 'photo' && <PhotoRecognize onConfirm={addRecognized} />}
       {mode.kind === 'text' && (
         <TextRecognize initialText={mode.initial} onConfirm={addRecognized} />
@@ -269,6 +280,7 @@ function FoodSearch(props: {
         <div className="list">
           {items.map((f) => (
             <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
+              <FoodThumb imageUrl={f.imageUrl} category={f.category} />
               <span className="food-name">
                 {f.name}
                 {f.brand && <span className="muted small">{f.brand}</span>}
@@ -296,11 +308,14 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
 
   return (
     <div className="sheet-body">
-      <div>
-        <h2>{props.food.name}</h2>
-        <div className="muted small">
-          {props.food.brand ? `${props.food.brand} · ` : ''}
-          {Math.round(props.food.per100g.kcal)} ккал на 100 г
+      <div className="portion-head">
+        <FoodThumb imageUrl={props.food.imageUrl} category={props.food.category} size="large" />
+        <div>
+          <h2>{props.food.name}</h2>
+          <div className="muted small">
+            {props.food.brand ? `${props.food.brand} · ` : ''}
+            {Math.round(props.food.per100g.kcal)} ккал на 100 г
+          </div>
         </div>
       </div>
       <section className="card form">
@@ -335,9 +350,18 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
 }
 
 function ManualFood(props: {
+  /** Штрихкод товара, который не нашёлся при скане: продукт сохранится с ним. */
+  barcode?: string;
   onAdd: (e: Omit<CreateDiaryEntry, 'meal' | 'eatenAt'>) => Promise<void>;
 }) {
+  const { barcode } = props;
   const [name, setName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [label, setLabel] = useState<{ busy: boolean; note: string | null; error: string | null }>({
+    busy: false,
+    note: null,
+    error: null,
+  });
   const [grams, setGrams] = useState('100');
   const [per, setPer] = useState({ kcal: '', protein: '', fat: '', carbs: '' });
   const [saveFood, setSaveFood] = useState(true);
@@ -357,12 +381,51 @@ function ManualFood(props: {
     setBusy(true);
     try {
       let foodId: string | undefined;
-      if (saveFood) {
-        foodId = (await post<FoodDto>('/foods', { name: name.trim(), per100g: per100g.data })).id;
+      if (saveFood || barcode) {
+        const food = await post<FoodDto>('/foods', {
+          name: name.trim(),
+          brand: brand.trim() || undefined,
+          barcode,
+          per100g: per100g.data,
+        });
+        foodId = food.id;
       }
       await props.onAdd({ foodId, name: name.trim(), grams: g, per100g: per100g.data });
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** Фото таблицы пищевой ценности → поля формы. */
+  async function readLabel(file: File | undefined) {
+    if (!file) return;
+    setLabel({ busy: true, note: null, error: null });
+    try {
+      const res = await post<NutritionLabel>('/recognize/label', await prepareImage(file));
+      if (res.per100g) {
+        const s = (n: number) => String(n);
+        setPer({
+          kcal: s(res.per100g.kcal),
+          protein: s(res.per100g.protein),
+          fat: s(res.per100g.fat),
+          carbs: s(res.per100g.carbs),
+        });
+      }
+      if (res.name && !name.trim()) setName(res.name);
+      if (res.brand && !brand.trim()) setBrand(res.brand);
+      setLabel({
+        busy: false,
+        note: res.per100g
+          ? (res.note ?? 'Заполнил по этикетке, проверь значения.')
+          : (res.note ?? 'Не получилось прочитать таблицу. Сфотографируй её ближе и ровнее.'),
+        error: null,
+      });
+    } catch (e) {
+      setLabel({
+        busy: false,
+        note: null,
+        error: aiErrorText(e, 'Не получилось прочитать этикетку. Введи значения вручную.'),
+      });
     }
   }
 
@@ -379,16 +442,44 @@ function ManualFood(props: {
 
   return (
     <div className="sheet-body">
+      {barcode && (
+        <div className="barcode-note">
+          <Icon name="barcode" size={18} />
+          <span>
+            Штрихкод <b>{barcode}</b>
+          </span>
+        </div>
+      )}
+      {barcode && (
+        <label className={label.busy ? 'file-button busy' : 'file-button'}>
+          <Icon name="camera" />
+          {label.busy ? 'Читаю этикетку…' : 'Заполнить по фото этикетки'}
+          <input
+            type="file"
+            accept="image/*"
+            disabled={label.busy}
+            onChange={(e) => void readLabel(e.target.files?.[0])}
+          />
+        </label>
+      )}
+      {label.note && <p className="muted small">{label.note}</p>}
+      {label.error && <p className="error-text small">{label.error}</p>}
       <section className="card form">
         <label>
           Название
           <input
-            autoFocus
+            autoFocus={!barcode}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Например, сырники"
+            placeholder={barcode ? 'Как написано на упаковке' : 'Например, сырники'}
           />
         </label>
+        {barcode && (
+          <label>
+            Бренд (необязательно)
+            <input value={brand} onChange={(e) => setBrand(e.target.value)} />
+          </label>
+        )}
         <div>
           <div className="label">На 100 г</div>
           <div className="row4">
@@ -404,10 +495,21 @@ function ManualFood(props: {
         </label>
       </section>
       {valid && per100g.success && <NutrientsLine n={scaleNutrients(per100g.data, g)} />}
-      <label className="check">
-        <input type="checkbox" checked={saveFood} onChange={(e) => setSaveFood(e.target.checked)} />
-        Сохранить в мои продукты
-      </label>
+      {barcode ? (
+        <p className="muted small">
+          Продукт сохранится по штрихкоду: при следующем скане он найдётся сразу, в том числе у
+          друзей.
+        </p>
+      ) : (
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={saveFood}
+            onChange={(e) => setSaveFood(e.target.checked)}
+          />
+          Сохранить в мои продукты
+        </label>
+      )}
       <button className="primary" disabled={!valid || busy} onClick={submit}>
         Добавить
       </button>

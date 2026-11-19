@@ -8,6 +8,8 @@ export function toFoodDto(food: Food): FoodDto {
     brand: food.brand,
     barcode: food.barcode,
     source: food.source,
+    imageUrl: food.imageUrl,
+    category: food.category,
     per100g: { kcal: food.kcal, protein: food.protein, fat: food.fat, carbs: food.carbs },
   };
 }

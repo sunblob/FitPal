@@ -100,10 +100,14 @@ export const dayQuerySchema = z.object({
 });
 export type DayQuery = z.infer<typeof dayQuerySchema>;
 
+/** EAN-8, UPC-A, EAN-13, GTIN-14. */
+export const barcodeSchema = z.string().regex(/^\d{8,14}$/, 'Invalid barcode');
+
 export const createFoodSchema = z.object({
   name: z.string().trim().min(1).max(200),
   brand: z.string().trim().max(200).optional(),
-  barcode: z.string().trim().max(32).optional(),
+  /** Штрихкод отсканированного товара: по нему продукт найдётся при следующем скане. */
+  barcode: barcodeSchema.optional(),
   per100g: nutrientsSchema,
 });
 export type CreateFood = z.infer<typeof createFoodSchema>;
@@ -119,6 +123,10 @@ export interface FoodDto {
   brand: string | null;
   barcode: string | null;
   source: FoodSource;
+  /** Фото товара (Open Food Facts), если есть. */
+  imageUrl: string | null;
+  /** Группа встроенного справочника для иконки: vegetables, dairy… */
+  category: string | null;
   per100g: Nutrients;
 }
 
@@ -130,6 +138,9 @@ export interface DiaryEntryDto {
   grams: number;
   eatenAt: string;
   nutrients: Nutrients;
+  /** Фото и группа продукта, если запись сделана из базы продуктов. */
+  imageUrl: string | null;
+  category: string | null;
 }
 
 export interface DiaryDayDto {
@@ -138,9 +149,6 @@ export interface DiaryDayDto {
   totals: Nutrients;
   meals: Record<MealType, { entries: DiaryEntryDto[]; totals: Nutrients }>;
 }
-
-/** EAN-8, UPC-A, EAN-13, GTIN-14. */
-export const barcodeSchema = z.string().regex(/^\d{8,14}$/, 'Invalid barcode');
 
 export const barcodeParamSchema = z.object({ code: barcodeSchema });
 export type BarcodeParam = z.infer<typeof barcodeParamSchema>;
@@ -178,6 +186,17 @@ export const recognizePhotoSchema = z.object({
   hint: z.string().trim().max(300).optional(),
 });
 export type RecognizePhoto = z.infer<typeof recognizePhotoSchema>;
+
+/** Таблица пищевой ценности с упаковки: значения на 100 г. */
+export const nutritionLabelSchema = z.object({
+  /** Название товара, если оно видно на фото. */
+  name: z.string().nullable(),
+  brand: z.string().nullable(),
+  /** null, если таблицу не удалось прочитать. */
+  per100g: nutrientsSchema.nullable(),
+  note: z.string().nullable(),
+});
+export type NutritionLabel = z.infer<typeof nutritionLabelSchema>;
 
 /** Описание еды словами: «борщ со сметаной и кусок чёрного хлеба». */
 export const recognizeTextSchema = z.object({

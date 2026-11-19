@@ -3,7 +3,7 @@ import { Env } from '../config/env.js';
 import { parseOffProduct, preferCountries, type OffProduct } from './open-food-facts.js';
 
 const FIELDS =
-  'code,product_name,product_name_ru,product_name_sk,product_name_cs,generic_name,brands,countries_tags,nutriments';
+  'code,product_name,product_name_ru,product_name_sk,product_name_cs,generic_name,brands,countries_tags,nutriments,image_front_small_url,image_front_url,image_small_url,image_url';
 const TIMEOUT_MS = 6000;
 
 /** Клиент Open Food Facts. Ошибки сети не пробрасываются: продукт просто не найден. */

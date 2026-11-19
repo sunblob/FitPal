@@ -66,12 +66,21 @@ export class FoodsService implements OnApplicationBootstrap {
   /** Продукт по штрихкоду: из кэша, иначе из Open Food Facts. */
   async byBarcode(code: string): Promise<FoodDto> {
     const cached = await this.db.query.foods.findFirst({ where: eq(foods.barcode, code) });
-    if (cached) return toFoodDto(cached);
+    if (cached) {
+      // Кэш до появления картинок: подтягиваем фото в фоне, ответ не ждёт OFF
+      if (cached.source === 'openfoodfacts' && !cached.imageUrl) void this.refreshImage(code);
+      return toFoodDto(cached);
+    }
 
     const product = await this.off.byBarcode(code);
     if (!product) throw new NotFoundException('Product not found');
     const [food] = await this.cache([product]);
     return toFoodDto(food!);
+  }
+
+  private async refreshImage(code: string): Promise<void> {
+    const product = await this.off.byBarcode(code);
+    if (product?.imageUrl) await this.cache([product]);
   }
 
   /** Сохраняет продукты из Open Food Facts как общие (без владельца), обновляя по штрихкоду. */
@@ -88,6 +97,7 @@ export class FoodsService implements OnApplicationBootstrap {
           source: 'openfoodfacts' as const,
           ownerId: null,
           searchText: buildSearchText(p),
+          imageUrl: p.imageUrl,
           ...p.per100g,
         })),
       )
@@ -97,6 +107,7 @@ export class FoodsService implements OnApplicationBootstrap {
           name: sql`excluded.name`,
           brand: sql`excluded.brand`,
           searchText: sql`excluded.search_text`,
+          imageUrl: sql`coalesce(excluded.image_url, ${foods.imageUrl})`,
           kcal: sql`excluded.kcal`,
           protein: sql`excluded.protein`,
           fat: sql`excluded.fat`,
@@ -156,20 +167,37 @@ export class FoodsService implements OnApplicationBootstrap {
     return rows.map((r) => toFoodDto(r.food));
   }
 
+  /**
+   * Свой продукт. Со штрихкодом (товар не нашёлся при скане) он становится общим для поиска
+   * по штрихкоду: следующий скан этого товара у любого пользователя найдёт его сразу.
+   * В текстовом поиске он по-прежнему виден только владельцу.
+   */
   async create(userId: string, input: CreateFood): Promise<FoodDto> {
+    if (input.barcode) {
+      const existing = await this.db.query.foods.findFirst({
+        where: eq(foods.barcode, input.barcode),
+      });
+      // Кто-то успел добавить этот штрихкод раньше: отдаём существующий продукт
+      if (existing) return toFoodDto(existing);
+    }
     const [food] = await this.db
       .insert(foods)
       .values({
         name: input.name,
         brand: input.brand ?? null,
-        // Штрихкод уникален глобально, у своих продуктов его не храним, чтобы не конфликтовать с общей базой
-        barcode: null,
+        barcode: input.barcode ?? null,
         source: 'manual',
         ownerId: userId,
         searchText: buildSearchText({ name: input.name, brand: input.brand }),
         ...input.per100g,
       })
+      .onConflictDoNothing({ target: foods.barcode })
       .returning();
-    return toFoodDto(food!);
+    if (food) return toFoodDto(food);
+    // Гонка: тот же штрихкод вставили параллельно
+    const winner = await this.db.query.foods.findFirst({
+      where: eq(foods.barcode, input.barcode!),
+    });
+    return toFoodDto(winner!);
   }
 }

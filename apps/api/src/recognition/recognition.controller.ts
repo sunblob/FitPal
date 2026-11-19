@@ -19,6 +19,12 @@ export class RecognitionController {
     );
   }
 
+  /** Таблица пищевой ценности с упаковки, для своего продукта со штрихкодом. */
+  @Post('label')
+  readLabel(@CurrentUser() user: User, @Body() body: RecognizePhotoDto) {
+    return this.recognition.readLabel(user.id, { mediaType: body.mediaType, data: body.data });
+  }
+
   @Post('text')
   recognizeText(@CurrentUser() user: User, @Body() body: RecognizeTextDto) {
     return this.recognition.recognizeText(user.id, body.text);

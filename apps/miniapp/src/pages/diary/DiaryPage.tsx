@@ -8,9 +8,12 @@ import {
   type MealType,
 } from '@fitpal/shared';
 import { CalorieRing } from '../../components/CalorieRing';
+import { FoodThumb } from '../../components/FoodThumb';
 import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { StepsCard } from '../../components/StepsCard';
+import { WorkoutToday } from '../../components/WorkoutToday';
+import { useWorkoutLog } from '../../lib/workoutLog';
 import { api, del, type Me } from '../../lib/api';
 import { formatDateRu } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
@@ -47,6 +50,7 @@ export function DiaryPage({ me }: { me: Me }) {
   const [day, setDay] = useState<DiaryDayDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<MealType | null>(null);
+  const workout = useWorkoutLog(date);
 
   const load = useCallback(() => {
     api<DiaryDayDto>(`/diary?date=${date}`).then(setDay, (e: Error) => setError(e.message));
@@ -115,6 +119,10 @@ export function DiaryPage({ me }: { me: Me }) {
 
       <StepsCard date={date} weightKg={me.weightKg} />
 
+      {workout.logs && workout.logs.length > 0 && (
+        <WorkoutToday logs={workout.logs} title="Тренировка" />
+      )}
+
       {error && <pre className="error">{error}</pre>}
 
       {MEAL_TYPES.map((meal) => {
@@ -144,6 +152,7 @@ export function DiaryPage({ me }: { me: Me }) {
               <ul className="entries">
                 {entries.map((e) => (
                   <li key={e.id} className="entry">
+                    <FoodThumb imageUrl={e.imageUrl} category={e.category} />
                     <div className="entry-main">
                       <div className="entry-name">{e.name}</div>
                       <div className="muted small">
