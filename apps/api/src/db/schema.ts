@@ -1,0 +1,116 @@
+import {
+  bigint,
+  date,
+  uniqueIndex,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
+
+export const sexEnum = pgEnum('sex', ['male', 'female']);
+export const activityEnum = pgEnum('activity_level', [
+  'sedentary',
+  'light',
+  'moderate',
+  'active',
+  'very_active',
+]);
+export const goalEnum = pgEnum('goal', ['lose', 'maintain', 'gain']);
+export const foodSourceEnum = pgEnum('food_source', ['manual', 'openfoodfacts', 'builtin', 'ai']);
+export const mealEnum = pgEnum('meal_type', ['breakfast', 'lunch', 'dinner', 'snack']);
+
+const timestamps = {
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+};
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  telegramId: bigint('telegram_id', { mode: 'number' }).notNull().unique(),
+  username: text('username'),
+  firstName: text('first_name'),
+  languageCode: text('language_code'),
+  sex: sexEnum('sex'),
+  birthYear: integer('birth_year'),
+  heightCm: real('height_cm'),
+  weightKg: real('weight_kg'),
+  activityLevel: activityEnum('activity_level'),
+  goal: goalEnum('goal'),
+  targetWeightKg: real('target_weight_kg'),
+  weeklyRateKg: real('weekly_rate_kg'),
+  targetKcal: integer('target_kcal'),
+  targetProtein: integer('target_protein'),
+  targetFat: integer('target_fat'),
+  targetCarbs: integer('target_carbs'),
+  timezone: text('timezone').notNull().default('Europe/Moscow'),
+  ...timestamps,
+});
+
+/** Продукты: свои, кэш из Open Food Facts, встроенный справочник. Значения на 100 г. */
+export const foods = pgTable(
+  'foods',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    brand: text('brand'),
+    barcode: text('barcode').unique(),
+    source: foodSourceEnum('source').notNull(),
+    ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+    kcal: real('kcal').notNull(),
+    protein: real('protein').notNull(),
+    fat: real('fat').notNull(),
+    carbs: real('carbs').notNull(),
+    ...timestamps,
+  },
+  (t) => [index('foods_name_idx').on(t.name)],
+);
+
+/** Записи дневника. КБЖУ копируются, чтобы правка продукта не меняла историю. */
+export const diaryEntries = pgTable(
+  'diary_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    foodId: uuid('food_id').references(() => foods.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    meal: mealEnum('meal').notNull(),
+    grams: real('grams').notNull(),
+    kcal: real('kcal').notNull(),
+    protein: real('protein').notNull(),
+    fat: real('fat').notNull(),
+    carbs: real('carbs').notNull(),
+    eatenAt: timestamp('eaten_at', { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps,
+  },
+  (t) => [index('diary_user_eaten_idx').on(t.userId, t.eatenAt)],
+);
+
+/** Взвешивания: одна запись на день, для графика веса. */
+export const weightLogs = pgTable(
+  'weight_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    weightKg: real('weight_kg').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('weight_logs_user_date_idx').on(t.userId, t.date)],
+);
+
+export type User = typeof users.$inferSelect;
+export type Food = typeof foods.$inferSelect;
+export type DiaryEntry = typeof diaryEntries.$inferSelect;
+export type WeightLog = typeof weightLogs.$inferSelect;
