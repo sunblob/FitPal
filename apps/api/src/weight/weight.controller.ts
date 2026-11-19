@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { logWeightSchema, type LogWeight } from '@fitpal/shared';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
-import { ZodPipe } from '../common/zod.pipe.js';
 import type { User } from '../db/schema.js';
+import { LogWeightDto } from './dto/log-weight.dto.js';
+import { WeightHistoryQueryDto } from './dto/weight-history-query.dto.js';
 import { WeightService } from './weight.service.js';
 
 @Controller('weight')
@@ -11,12 +11,12 @@ export class WeightController {
   constructor(private readonly weight: WeightService) {}
 
   @Post()
-  log(@CurrentUser() user: User, @Body(new ZodPipe(logWeightSchema)) body: LogWeight) {
+  log(@CurrentUser() user: User, @Body() body: LogWeightDto) {
     return this.weight.log(user.id, body.weightKg, body.date);
   }
 
   @Get()
-  history(@CurrentUser() user: User, @Query('from') from?: string, @Query('to') to?: string) {
-    return this.weight.history(user.id, from, to);
+  history(@CurrentUser() user: User, @Query() query: WeightHistoryQueryDto) {
+    return this.weight.history(user.id, query.from, query.to);
   }
 }

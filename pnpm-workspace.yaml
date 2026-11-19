@@ -4,3 +4,8 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+peerDependencyRules:
+  allowedVersions:
+    # nestjs-zod 5 ещё не объявил поддержку Nest 12, но работает с ним
+    nestjs-zod>@nestjs/common: '12'

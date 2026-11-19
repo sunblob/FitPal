@@ -1,8 +1,7 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
-import { profileSchema, type Profile } from '@fitpal/shared';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
-import { ZodPipe } from '../common/zod.pipe.js';
 import type { User } from '../db/schema.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UsersService } from './users.service.js';
 
 @Controller('me')
@@ -16,7 +15,7 @@ export class UsersController {
   }
 
   @Put('profile')
-  updateProfile(@CurrentUser() user: User, @Body(new ZodPipe(profileSchema)) body: Profile) {
+  updateProfile(@CurrentUser() user: User, @Body() body: UpdateProfileDto) {
     return this.users.updateProfile(user.id, body);
   }
 }
