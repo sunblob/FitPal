@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module.js';
 import { BotModule } from './bot/bot.module.js';
 import { WeightModule } from './weight/weight.module.js';
 import { StepsModule } from './steps/steps.module.js';
+import { WaterModule } from './water/water.module.js';
 import { FoodsModule } from './foods/foods.module.js';
 import { DiaryModule } from './diary/diary.module.js';
 import { RecognitionModule } from './recognition/recognition.module.js';
@@ -21,6 +22,7 @@ import { HealthController } from './health/health.controller.js';
     UsersModule,
     WeightModule,
     StepsModule,
+    WaterModule,
     FoodsModule,
     DiaryModule,
     RecognitionModule,
