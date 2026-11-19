@@ -10,6 +10,7 @@ import {
 import { CalorieRing } from '../../components/CalorieRing';
 import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
+import { StepsCard } from '../../components/StepsCard';
 import { api, del, type Me } from '../../lib/api';
 import { formatDateRu } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
@@ -111,6 +112,8 @@ export function DiaryPage({ me }: { me: Me }) {
           />
         </div>
       </section>
+
+      <StepsCard date={date} weightKg={me.weightKg} />
 
       {error && <pre className="error">{error}</pre>}
 

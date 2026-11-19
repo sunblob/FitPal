@@ -120,6 +120,21 @@ export const weightLogs = pgTable(
   (t) => [uniqueIndex('weight_logs_user_date_idx').on(t.userId, t.date)],
 );
 
+/** Шаги за день, вводятся вручную: одна запись на день. */
+export const stepLogs = pgTable(
+  'step_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    steps: integer('steps').notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('step_logs_user_date_idx').on(t.userId, t.date)],
+);
+
 /** Каталог упражнений (импорт из free-exercise-db, id — slug оттуда). */
 export const exercises = pgTable(
   'exercises',
@@ -165,5 +180,6 @@ export type User = typeof users.$inferSelect;
 export type Food = typeof foods.$inferSelect;
 export type DiaryEntry = typeof diaryEntries.$inferSelect;
 export type WeightLog = typeof weightLogs.$inferSelect;
+export type StepLog = typeof stepLogs.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type WorkoutPlan = typeof workoutPlans.$inferSelect;
