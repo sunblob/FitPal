@@ -68,6 +68,15 @@ const ru = {
     empty: 'Пока пусто',
     addTo: (meal: string) => `Добавить в ${meal.toLowerCase()}`,
     editEntry: (name: string) => `Изменить: ${name}`,
+    budget: (kcal: number) => `можно ещё ~${kcal} ккал`,
+    left: (kcal: number) => `Осталось ${kcal} ккал`,
+    over: (kcal: number) => `Сверх нормы ${kcal} ккал`,
+    repeatMeal: (yesterday: boolean, kcal: number) =>
+      `${yesterday ? 'Как вчера' : 'Как днём раньше'} · ${kcal} ккал`,
+    repeatDay: (yesterday: boolean): string =>
+      yesterday ? 'Повторить вчерашний день' : 'Повторить предыдущий день',
+    repeatDayHint: (count: number, kcal: number) =>
+      `${count} ${ruPlural(count, 'запись', 'записи', 'записей')} · ${kcal} ккал`,
   },
   edit: {
     title: 'Запись',
@@ -109,6 +118,12 @@ const ru = {
     frequentEmpty: 'Здесь появятся продукты, которые ты добавляешь чаще всего.',
     results: 'Результаты',
     frequent: 'Часто добавляешь',
+    tabs: { frequent: 'Частые', recent: 'Недавние', favorites: 'Избранное' },
+    recentEmpty: 'Здесь появится то, что ты ел за последние два месяца.',
+    favoritesEmpty: 'Отмечай продукты звёздочкой на экране порции, и они будут здесь.',
+    lastPortion: (g: number) => `в прошлый раз ${g} г`,
+    addFavorite: 'Добавить в избранное',
+    removeFavorite: 'Убрать из избранного',
     per100: 'ккал / 100 г',
     kcalPer100: (kcal: number) => `${kcal} ккал на 100 г`,
     portionWeight: 'Вес порции, г',
@@ -319,6 +334,15 @@ const en: Dict = {
     empty: 'Nothing yet',
     addTo: (meal) => `Add to ${meal.toLowerCase()}`,
     editEntry: (name) => `Edit ${name}`,
+    budget: (kcal) => `~${kcal} kcal available`,
+    left: (kcal) => `${kcal} kcal left`,
+    over: (kcal) => `${kcal} kcal over`,
+    repeatMeal: (yesterday, kcal) =>
+      `${yesterday ? 'Same as yesterday' : 'Same as day before'} · ${kcal} kcal`,
+    repeatDay: (yesterday) =>
+      yesterday ? "Repeat yesterday's food" : "Repeat the previous day's food",
+    repeatDayHint: (count, kcal) =>
+      `${count} ${enPlural(count, 'entry', 'entries')} · ${kcal} kcal`,
   },
   edit: {
     title: 'Entry',
@@ -360,6 +384,12 @@ const en: Dict = {
     frequentEmpty: 'Foods you add most often will show up here.',
     results: 'Results',
     frequent: 'Frequently added',
+    tabs: { frequent: 'Frequent', recent: 'Recent', favorites: 'Favorites' },
+    recentEmpty: "What you've eaten in the last two months will show up here.",
+    favoritesEmpty: 'Star foods on the portion screen and they will show up here.',
+    lastPortion: (g) => `last time ${g} g`,
+    addFavorite: 'Add to favorites',
+    removeFavorite: 'Remove from favorites',
     per100: 'kcal / 100 g',
     kcalPer100: (kcal) => `${kcal} kcal per 100 g`,
     portionWeight: 'Portion, g',

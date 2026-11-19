@@ -296,6 +296,20 @@ textarea:focus {
   border-color: var(--accent-vivid);
 }
 
+/* iOS рисует поле времени нативной кнопкой с текстом по центру и вылезает за карточку */
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  min-height: 46px;
+  text-align: left;
+}
+
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 input[type='checkbox'] {
   width: 20px;
   height: 20px;
@@ -720,6 +734,83 @@ button.danger-link {
   color: var(--danger);
   font-weight: 600;
   padding: 8px 10px;
+}
+
+/* --- Остаток нормы при прокрутке дневника --- */
+.budget-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translateY(-110%);
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+.budget-bar.shown {
+  transform: none;
+}
+
+.budget-bar-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.budget-left {
+  color: var(--accent-text);
+}
+
+.budget-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.budget-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.budget-fill.over {
+  background: var(--danger);
+}
+
+/* --- Повтор вчерашнего --- */
+button.repeat-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.repeat-day-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+button.repeat-meal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 
 /* --- Окно добавления еды --- */
@@ -1371,6 +1462,24 @@ button.steps-value .icon-svg {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.portion-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.fav-btn {
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+
+.fav-btn.fav-on {
+  color: #f5a524;
+}
+
+.fav-btn.fav-on .icon-svg {
+  fill: currentColor;
 }
 
 .portion-head h2 {

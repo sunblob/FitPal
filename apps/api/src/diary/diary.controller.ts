@@ -13,6 +13,7 @@ import {
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import { UuidParamDto } from '../common/dto/uuid-param.dto.js';
 import type { User } from '../db/schema.js';
+import { CopyDiaryDto } from './dto/copy-diary.dto.js';
 import { CreateDiaryEntryDto } from './dto/create-diary-entry.dto.js';
 import { DiaryDayQueryDto } from './dto/diary-day-query.dto.js';
 import { UpdateDiaryEntryDto } from './dto/update-diary-entry.dto.js';
@@ -31,6 +32,11 @@ export class DiaryController {
   @Post()
   add(@CurrentUser() user: User, @Body() body: CreateDiaryEntryDto) {
     return this.diary.add(user.id, body, user.language);
+  }
+
+  @Post('copy')
+  copy(@CurrentUser() user: User, @Body() body: CopyDiaryDto) {
+    return this.diary.copy(user, body);
   }
 
   @Patch(':id')

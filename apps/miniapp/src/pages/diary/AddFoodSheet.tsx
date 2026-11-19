@@ -7,6 +7,7 @@ import {
   type FoodDto,
   type MealType,
   type Nutrients,
+  type RecentFoodDto,
   type NutritionLabel,
   type RecognizedFood,
 } from '@fitpal/shared';
@@ -16,7 +17,7 @@ import { PhotoRecognize } from '../../components/PhotoRecognize';
 import { aiErrorText } from '../../components/RecognizedItems';
 import { TextRecognize } from '../../components/TextRecognize';
 import { getLanguage, L } from '../../i18n';
-import { api, post } from '../../lib/api';
+import { api, del, post, put } from '../../lib/api';
 import { prepareImage } from '../../lib/image';
 
 // Сканер тянет wasm на ~1 МБ, грузим его только когда он нужен
@@ -29,12 +30,24 @@ type Mode =
   | { kind: 'scan' }
   | { kind: 'lookup'; code: string }
   | { kind: 'notFound'; code: string }
-  | { kind: 'portion'; food: FoodDto }
+  | { kind: 'portion'; food: PortionFood; grams?: number }
   | { kind: 'manual'; barcode?: string }
   | { kind: 'photo' }
   | { kind: 'text'; initial: string };
 
 export const PORTIONS = [50, 100, 150, 200, 300];
+
+/** Что можно записать порцией: продукт из базы или недавняя запись без продукта. */
+interface PortionFood {
+  foodId: string | null;
+  name: string;
+  brand: string | null;
+  imageUrl: string | null;
+  category: string | null;
+  per100g: Nutrients;
+}
+
+const fromFood = (f: FoodDto): PortionFood => ({ ...f, foodId: f.id });
 
 interface Props {
   meal: MealType;
@@ -47,6 +60,23 @@ interface Props {
 export function AddFoodSheet(props: Props) {
   const [mode, setMode] = useState<Mode>({ kind: 'search' });
   const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<FoodDto[] | null>(null);
+
+  useEffect(() => {
+    api<FoodDto[]>('/foods/favorites').then(setFavorites, () => setFavorites([]));
+  }, []);
+
+  async function toggleFavorite(food: PortionFood) {
+    if (!food.foodId || !favorites) return;
+    const on = favorites.some((f) => f.id === food.foodId);
+    try {
+      if (on) await del(`/foods/${food.foodId}/favorite`);
+      else await put(`/foods/${food.foodId}/favorite`, {});
+      setFavorites(await api<FoodDto[]>('/foods/favorites'));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   async function addEntry(entry: Omit<CreateDiaryEntry, 'meal' | 'eatenAt'>) {
     setError(null);
@@ -86,7 +116,7 @@ export function AddFoodSheet(props: Props) {
     setError(null);
     try {
       const food = await api<FoodDto>(`/foods/barcode/${code}`);
-      setMode({ kind: 'portion', food });
+      setMode({ kind: 'portion', food: fromFood(food) });
     } catch (e) {
       if ((e as Error).message.startsWith('API 404')) setMode({ kind: 'notFound', code });
       else {
@@ -115,7 +145,9 @@ export function AddFoodSheet(props: Props) {
       {error && <pre className="error">{error}</pre>}
       {mode.kind === 'search' && (
         <FoodSearch
-          onPick={(food) => setMode({ kind: 'portion', food })}
+          favorites={favorites}
+          onPick={(food) => setMode({ kind: 'portion', food: fromFood(food) })}
+          onPickRecent={(r) => setMode({ kind: 'portion', food: r, grams: r.lastGrams })}
           onManual={() => setMode({ kind: 'manual' })}
           onScan={() => setMode({ kind: 'scan' })}
           onPhoto={() => setMode({ kind: 'photo' })}
@@ -125,9 +157,14 @@ export function AddFoodSheet(props: Props) {
       {mode.kind === 'portion' && (
         <Portion
           food={mode.food}
+          initialGrams={mode.grams}
+          favorite={
+            mode.food.foodId && favorites ? favorites.some((f) => f.id === mode.food.foodId) : null
+          }
+          onToggleFavorite={() => void toggleFavorite(mode.food)}
           onAdd={(grams) =>
             addEntry({
-              foodId: mode.food.id,
+              foodId: mode.food.foodId ?? undefined,
               name: mode.food.name,
               grams,
               per100g: mode.food.per100g,
@@ -179,8 +216,12 @@ export function AddFoodSheet(props: Props) {
   );
 }
 
+type Tab = 'frequent' | 'recent' | 'favorites';
+
 function FoodSearch(props: {
+  favorites: FoodDto[] | null;
   onPick: (f: FoodDto) => void;
+  onPickRecent: (r: RecentFoodDto) => void;
   onManual: () => void;
   onScan: () => void;
   onPhoto: () => void;
@@ -189,6 +230,13 @@ function FoodSearch(props: {
   const [q, setQ] = useState('');
   const [items, setItems] = useState<FoodDto[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<Tab>('frequent');
+  const [recent, setRecent] = useState<RecentFoodDto[] | null>(null);
+
+  useEffect(() => {
+    if (tab !== 'recent' || recent) return;
+    api<RecentFoodDto[]>('/foods/recent').then(setRecent, () => setRecent([]));
+  }, [tab, recent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,39 +302,104 @@ function FoodSearch(props: {
           </span>
         </button>
       )}
-      {loading && <div className="muted small">{L.add.searching}</div>}
-      {!loading && items && items.length === 0 && (
-        <p className="muted">{q ? L.add.nothingFound : L.add.frequentEmpty}</p>
-      )}
-      {!loading && items && items.length > 0 && (
-        <div className="section-label">{q ? L.add.results : L.add.frequent}</div>
-      )}
-      {items && items.length > 0 && (
-        <div className="list">
-          {items.map((f) => (
-            <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
-              <FoodThumb imageUrl={f.imageUrl} category={f.category} />
-              <span className="food-name">
-                {f.name}
-                {f.brand && <span className="muted small">{f.brand}</span>}
-              </span>
-              <span className="food-kcal">
-                <b>{Math.round(f.per100g.kcal)}</b>
-                <span className="muted small">{L.add.per100}</span>
-              </span>
-              <span className="food-add" aria-hidden="true">
-                <Icon name="plus" size={18} />
-              </span>
+      {!q.trim() && (
+        <div className="chips search-tabs" role="tablist">
+          {(['frequent', 'recent', 'favorites'] as const).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={tab === t ? 'chip chip-on' : 'chip'}
+              onClick={() => setTab(t)}
+            >
+              {L.add.tabs[t]}
             </button>
           ))}
         </div>
+      )}
+      {q.trim() || tab === 'frequent' ? (
+        <>
+          {loading && <div className="muted small">{L.add.searching}</div>}
+          {!loading && items && items.length === 0 && (
+            <p className="muted">{q ? L.add.nothingFound : L.add.frequentEmpty}</p>
+          )}
+          {!loading && items && items.length > 0 && q && (
+            <div className="section-label">{L.add.results}</div>
+          )}
+          {items && items.length > 0 && <FoodList foods={items} onPick={props.onPick} />}
+        </>
+      ) : tab === 'favorites' ? (
+        props.favorites &&
+        (props.favorites.length === 0 ? (
+          <p className="muted">{L.add.favoritesEmpty}</p>
+        ) : (
+          <FoodList foods={props.favorites} onPick={props.onPick} />
+        ))
+      ) : (
+        recent &&
+        (recent.length === 0 ? (
+          <p className="muted">{L.add.recentEmpty}</p>
+        ) : (
+          <div className="list">
+            {recent.map((r) => (
+              <button
+                key={r.foodId ?? r.name}
+                className="food-row"
+                onClick={() => props.onPickRecent(r)}
+              >
+                <FoodThumb imageUrl={r.imageUrl} category={r.category} />
+                <span className="food-name">
+                  {r.name}
+                  <span className="muted small">{L.add.lastPortion(r.lastGrams)}</span>
+                </span>
+                <span className="food-kcal">
+                  <b>{Math.round((r.per100g.kcal * r.lastGrams) / 100)}</b>
+                  <span className="muted small">{L.common.kcal}</span>
+                </span>
+                <span className="food-add" aria-hidden="true">
+                  <Icon name="plus" size={18} />
+                </span>
+              </button>
+            ))}
+          </div>
+        ))
       )}
     </div>
   );
 }
 
-function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
-  const [grams, setGrams] = useState('100');
+function FoodList(props: { foods: FoodDto[]; onPick: (f: FoodDto) => void }) {
+  return (
+    <div className="list">
+      {props.foods.map((f) => (
+        <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
+          <FoodThumb imageUrl={f.imageUrl} category={f.category} />
+          <span className="food-name">
+            {f.name}
+            {f.brand && <span className="muted small">{f.brand}</span>}
+          </span>
+          <span className="food-kcal">
+            <b>{Math.round(f.per100g.kcal)}</b>
+            <span className="muted small">{L.add.per100}</span>
+          </span>
+          <span className="food-add" aria-hidden="true">
+            <Icon name="plus" size={18} />
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Portion(props: {
+  food: PortionFood;
+  initialGrams?: number;
+  /** null — продукт нельзя добавить в избранное (нет в базе) или избранное ещё грузится. */
+  favorite: boolean | null;
+  onToggleFavorite: () => void;
+  onAdd: (grams: number) => void;
+}) {
+  const [grams, setGrams] = useState(String(props.initialGrams ?? 100));
   const g = Number(grams);
   const valid = g > 0 && g <= 5000;
   const n = valid ? scaleNutrients(props.food.per100g, g) : null;
@@ -295,13 +408,23 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
     <div className="sheet-body">
       <div className="portion-head">
         <FoodThumb imageUrl={props.food.imageUrl} category={props.food.category} size="large" />
-        <div>
+        <div className="portion-title">
           <h2>{props.food.name}</h2>
           <div className="muted small">
             {props.food.brand ? `${props.food.brand} · ` : ''}
             {L.add.kcalPer100(Math.round(props.food.per100g.kcal))}
           </div>
         </div>
+        {props.favorite != null && (
+          <button
+            className={props.favorite ? 'icon-btn fav-btn fav-on' : 'icon-btn fav-btn'}
+            onClick={props.onToggleFavorite}
+            aria-pressed={props.favorite}
+            aria-label={props.favorite ? L.add.removeFavorite : L.add.addFavorite}
+          >
+            <Icon name="star" size={20} />
+          </button>
+        )}
       </div>
       <section className="card form">
         <label>
