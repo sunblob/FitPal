@@ -6,7 +6,12 @@ import {
   type RecognizedFood,
 } from '@fitpal/shared';
 import { ClaudeService } from '../ai/claude.service.js';
-import { RECOGNITION_SYSTEM, recognitionPrompt } from './recognition.prompt.js';
+import {
+  RECOGNITION_SYSTEM,
+  TEXT_RECOGNITION_SYSTEM,
+  recognitionPrompt,
+  textRecognitionPrompt,
+} from './recognition.prompt.js';
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -28,7 +33,10 @@ export function sanitizeRecognition(raw: PhotoRecognition): PhotoRecognition {
   return { items, note: raw.note?.trim() || null };
 }
 
-/** Сколько фото один пользователь может распознать за час: защищает ключ Anthropic от перерасхода. */
+/**
+ * Сколько запросов к ИИ (фото и описания вместе) один пользователь может сделать за час:
+ * защищает ключ Anthropic от перерасхода.
+ */
 const HOURLY_LIMIT = 30;
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -43,7 +51,7 @@ export class RecognitionService {
     const recent = (this.usage.get(userId) ?? []).filter((t) => now - t < HOUR_MS);
     if (recent.length >= HOURLY_LIMIT) {
       throw new HttpException(
-        'Слишком много фото за час, попробуй позже',
+        'Слишком много запросов к ИИ за час, попробуй позже',
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -68,6 +76,18 @@ export class RecognitionService {
       images: [image],
       effort: 'medium',
       maxTokens: 8000,
+    });
+    return sanitizeRecognition(raw);
+  }
+
+  async recognizeText(userId: string, text: string): Promise<PhotoRecognition> {
+    this.consume(userId);
+    const raw = await this.claude.parse({
+      schema: photoRecognitionSchema,
+      system: TEXT_RECOGNITION_SYSTEM,
+      prompt: textRecognitionPrompt(text),
+      effort: 'low',
+      maxTokens: 4000,
     });
     return sanitizeRecognition(raw);
   }

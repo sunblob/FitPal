@@ -178,3 +178,9 @@ export const recognizePhotoSchema = z.object({
   hint: z.string().trim().max(300).optional(),
 });
 export type RecognizePhoto = z.infer<typeof recognizePhotoSchema>;
+
+/** Описание еды словами: «борщ со сметаной и кусок чёрного хлеба». */
+export const recognizeTextSchema = z.object({
+  text: z.string().trim().min(2).max(500),
+});
+export type RecognizeText = z.infer<typeof recognizeTextSchema>;

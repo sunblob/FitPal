@@ -22,3 +22,16 @@ test('formatRecognition lists items and totals', () => {
 test('formatRecognition explains empty result', () => {
   assert.equal(formatRecognition({ items: [], note: 'На фото кот' }), 'На фото кот');
 });
+
+test('formatRecognition uses text wording for descriptions', () => {
+  const text = formatRecognition(
+    {
+      items: [{ name: 'Борщ', grams: 300, per100g: { kcal: 50, protein: 2, fat: 2.5, carbs: 5 } }],
+      note: null,
+    },
+    'text',
+  );
+  assert.match(text, /^Вот как я это посчитал:/);
+  assert.match(text, /• Борщ, 300 г: 150 ккал/);
+  assert.match(formatRecognition({ items: [], note: null }, 'text'), /Опиши подробнее/);
+});
