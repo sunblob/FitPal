@@ -15,6 +15,18 @@ export const envSchema = z.object({
   MINIAPP_URL: unsetIfEmpty(z.string().url().optional()),
   /** База Open Food Facts для поиска продуктов и штрихкодов. */
   OFF_BASE_URL: unsetIfEmpty(z.string().url().default('https://world.openfoodfacts.org')),
+  /** Товары каких стран (теги OFF через запятую) показывать в поиске первыми. */
+  OFF_PREFERRED_COUNTRIES: unsetIfEmpty(
+    z
+      .string()
+      .default('en:slovakia,en:czech-republic')
+      .transform((s) =>
+        s
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean),
+      ),
+  ),
   ANTHROPIC_API_KEY: unsetIfEmpty(z.string().optional()),
   /** Модель Claude для генерации планов и переводов. */
   ANTHROPIC_MODEL: unsetIfEmpty(z.string().default('claude-opus-5-5')),

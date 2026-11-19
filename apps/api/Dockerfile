@@ -13,7 +13,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 RUN pnpm turbo run build --filter @fitpal/api
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter @fitpal/api deploy --legacy --prod /out \
- && cp -r apps/api/dist apps/api/drizzle /out/
+ && cp -r apps/api/dist apps/api/drizzle apps/api/data /out/
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production PORT=3000

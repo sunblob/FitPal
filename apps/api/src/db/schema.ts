@@ -64,6 +64,14 @@ export const foods = pgTable(
     name: text('name').notNull(),
     brand: text('brand'),
     barcode: text('barcode').unique(),
+    /** Ключ встроенного справочника (usda:<fdc_id> или ref:<slug>), по нему обновляется сид. */
+    externalId: text('external_id').unique(),
+    /** Синонимы через запятую, участвуют в поиске. */
+    aliases: text('aliases'),
+    /** Нормализованные название, синонимы и бренд (см. foods/search-text.ts). */
+    searchText: text('search_text'),
+    /** Порядок во встроенном справочнике: самые обычные продукты группы идут первыми. */
+    sortOrder: integer('sort_order'),
     source: foodSourceEnum('source').notNull(),
     ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
     kcal: real('kcal').notNull(),
