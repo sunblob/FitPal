@@ -7,15 +7,22 @@ import {
 import { randomBytes } from 'node:crypto';
 import { Bot, InlineKeyboard, type Context } from 'grammy';
 import type { Update } from 'grammy/types';
-import { mealTypeSchema, scaleNutrients, sumNutrients, type RecognizedFood } from '@fitpal/shared';
+import {
+  mealTypeSchema,
+  recognizeTextSchema,
+  scaleNutrients,
+  sumNutrients,
+  type PhotoRecognition,
+  type RecognizedFood,
+} from '@fitpal/shared';
 import { Env } from '../config/env.js';
 import { DiaryService } from '../diary/diary.service.js';
 import { RecognitionService } from '../recognition/recognition.service.js';
 import { UsersService } from '../users/users.service.js';
 import { MEAL_BUTTONS, formatRecognition } from './photo-message.js';
 
-/** Распознанные, но ещё не записанные фото. Живут в памяти: после рестарта пользователь пришлёт фото заново. */
-interface PendingPhoto {
+/** Распознанная, но ещё не записанная еда. Живёт в памяти: после рестарта пользователь пришлёт её заново. */
+interface PendingFood {
   userId: string;
   items: RecognizedFood[];
   expiresAt: number;
@@ -29,7 +36,7 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
   private readonly logger = new Logger(BotService.name);
   readonly bot: Bot;
 
-  private readonly pending = new Map<string, PendingPhoto>();
+  private readonly pending = new Map<string, PendingFood>();
 
   constructor(
     private readonly env: Env,
@@ -51,12 +58,14 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
 
       await ctx.reply(
         `Привет, ${name}! Я FitPal и помогу считать калории.\n\n` +
-          'Записывай еду вручную, ищи в базе, сканируй штрихкод или просто пришли фото тарелки.',
+          'Записывай еду вручную, ищи в базе, сканируй штрихкод, пришли фото тарелки ' +
+          'или просто напиши, что съел: «овсянка на молоке и банан».',
         { reply_markup: keyboard },
       );
     });
 
     this.bot.on('message:photo', (ctx) => this.onPhoto(ctx));
+    this.bot.on('message:text', (ctx) => this.onText(ctx));
     this.bot.callbackQuery(/^ph:(\w+):(\w+)$/, (ctx) => this.onPhotoChoice(ctx));
 
     this.bot.catch((err) => this.logger.error(err.error, err.stack));
@@ -71,27 +80,52 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
   private async onPhoto(ctx: Context) {
     const photo = ctx.message?.photo?.at(-1);
     if (!ctx.from || !photo) return;
-    if (!this.recognition.enabled) {
-      await ctx.reply('Распознавание по фото пока не настроено.');
-      return;
-    }
-    const user = await this.users.upsertFromTelegram(ctx.from);
-    const status = await ctx.reply('Смотрю на фото…');
-
-    try {
+    await this.recognizeAndOffer(ctx, 'photo', async (userId) => {
       const file = await ctx.api.getFile(photo.file_id);
       const res = await fetch(
         `https://api.telegram.org/file/bot${this.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`,
       );
       if (!res.ok) throw new Error(`Telegram file download failed: ${res.status}`);
       const data = Buffer.from(await res.arrayBuffer()).toString('base64');
-
-      const result = await this.recognition.recognize(
-        user.id,
+      return this.recognition.recognize(
+        userId,
         { mediaType: 'image/jpeg', data },
         ctx.message?.caption,
       );
-      const text = formatRecognition(result);
+    });
+  }
+
+  private async onText(ctx: Context) {
+    const text = ctx.message?.text?.trim();
+    // Неизвестные команды не отправляем в ИИ
+    if (!ctx.from || !text || text.startsWith('/')) return;
+    const parsed = recognizeTextSchema.safeParse({ text });
+    if (!parsed.success) {
+      await ctx.reply('Опиши еду короче, до 500 символов. Например: «гречка 200 г и котлета».');
+      return;
+    }
+    await this.recognizeAndOffer(ctx, 'text', (userId) =>
+      this.recognition.recognizeText(userId, parsed.data.text),
+    );
+  }
+
+  /** Общий сценарий для фото и текста: распознать, показать список и кнопки приёмов пищи. */
+  private async recognizeAndOffer(
+    ctx: Context,
+    source: 'photo' | 'text',
+    run: (userId: string) => Promise<PhotoRecognition>,
+  ) {
+    if (!ctx.from) return;
+    if (!this.recognition.enabled) {
+      await ctx.reply('Распознавание еды через ИИ пока не настроено.');
+      return;
+    }
+    const user = await this.users.upsertFromTelegram(ctx.from);
+    const status = await ctx.reply(source === 'photo' ? 'Смотрю на фото…' : 'Считаю…');
+
+    try {
+      const result = await run(user.id);
+      const text = formatRecognition(result, source);
       if (result.items.length === 0) {
         await ctx.api.editMessageText(status.chat.id, status.message_id, text);
         return;
@@ -115,11 +149,13 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
         reply_markup: keyboard,
       });
     } catch (e) {
-      this.logger.error(`Photo recognition failed: ${(e as Error).message}`);
+      this.logger.error(`Food recognition (${source}) failed: ${(e as Error).message}`);
       const message =
         (e as { status?: number }).status === 429
-          ? 'Слишком много фото за час, попробуй позже.'
-          : 'Не получилось распознать фото. Попробуй ещё раз или добавь еду в дневнике.';
+          ? 'Слишком много запросов к ИИ за час, попробуй позже.'
+          : source === 'photo'
+            ? 'Не получилось распознать фото. Попробуй ещё раз или добавь еду в дневнике.'
+            : 'Не получилось посчитать. Попробуй ещё раз или добавь еду в дневнике.';
       await ctx.api.editMessageText(status.chat.id, status.message_id, message);
     }
   }
@@ -128,7 +164,7 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     const [, id, choice] = ctx.match as RegExpMatchArray;
     const entry = id ? this.pending.get(id) : undefined;
     if (!entry || entry.expiresAt < Date.now()) {
-      await ctx.answerCallbackQuery({ text: 'Это фото уже неактуально, пришли его ещё раз.' });
+      await ctx.answerCallbackQuery({ text: 'Это уже неактуально, пришли ещё раз.' });
       return;
     }
     this.pending.delete(id!);

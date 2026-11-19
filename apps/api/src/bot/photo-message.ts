@@ -6,15 +6,23 @@ import {
 } from '@fitpal/shared';
 
 /** Текст ответа бота с распознанными блюдами. */
-export function formatRecognition(result: PhotoRecognition): string {
+export function formatRecognition(
+  result: PhotoRecognition,
+  source: 'photo' | 'text' = 'photo',
+): string {
   if (result.items.length === 0) {
-    return result.note ?? 'Не нашёл еды на фото. Попробуй снять поближе.';
+    return (
+      result.note ??
+      (source === 'photo'
+        ? 'Не нашёл еды на фото. Попробуй снять поближе.'
+        : 'Не понял, что за еда. Опиши подробнее, например: «гречка 200 г и котлета».')
+    );
   }
   const portions = result.items.map((i) => ({ item: i, n: scaleNutrients(i.per100g, i.grams) }));
   const total = sumNutrients(portions.map((p) => p.n));
   const lines = portions.map(({ item, n }) => `• ${item.name}, ${item.grams} г: ${n.kcal} ккал`);
   return [
-    'Вот что я вижу:',
+    source === 'photo' ? 'Вот что я вижу:' : 'Вот как я это посчитал:',
     ...lines,
     '',
     `Итого ${total.kcal} ккал · Б ${total.protein} · Ж ${total.fat} · У ${total.carbs}`,
