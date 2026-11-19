@@ -6,3 +6,4 @@ export * from './steps.js';
 export * from './i18n.js';
 export * from './admin.js';
 export * from './streak.js';
+export * from './water.js';

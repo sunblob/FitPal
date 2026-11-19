@@ -17,6 +17,8 @@
   --on-accent: #ffffff;
   --danger: #d93036;
   --danger-soft: rgba(229, 72, 77, 0.12);
+  --water: #2f8fe0;
+  --water-soft: rgba(47, 143, 224, 0.13);
   --protein: #f0643c;
   --fat: #e9a21b;
   --carbs: #3b7ff2;
@@ -49,6 +51,8 @@
   --on-accent: #052e1f;
   --danger: #ff6369;
   --danger-soft: rgba(255, 99, 105, 0.14);
+  --water: #5aaeff;
+  --water-soft: rgba(90, 174, 255, 0.15);
   --protein: #ff8a65;
   --fat: #fbbf24;
   --carbs: #60a5fa;
@@ -1398,6 +1402,44 @@ button.ai-button {
 
 textarea {
   resize: vertical;
+}
+
+/* --- Вода --- */
+.water-glasses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+button.glass {
+  width: 26px;
+  height: 32px;
+  padding: 0;
+  border-radius: 4px 4px 9px 9px;
+  border: 2px solid var(--water);
+  background: transparent;
+  opacity: 0.55;
+}
+
+button.glass.full {
+  background: var(--water);
+  opacity: 1;
+}
+
+.water-icon {
+  background: var(--water-soft);
+  color: var(--water);
+}
+
+.water-extra {
+  font-weight: 650;
+  color: var(--water);
+}
+
+.water-head .icon-btn.small-btn {
+  box-shadow: none;
+  background: var(--surface-2);
 }
 
 /* --- Шаги --- */

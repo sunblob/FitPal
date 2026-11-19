@@ -15,6 +15,7 @@ import { FoodThumb } from '../../components/FoodThumb';
 import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { StepsCard } from '../../components/StepsCard';
+import { WaterCard } from '../../components/WaterCard';
 import { WorkoutToday } from '../../components/WorkoutToday';
 import { getLanguage, L, locale } from '../../i18n';
 import { useWorkoutLog } from '../../lib/workoutLog';
@@ -219,6 +220,7 @@ export function DiaryPage({ me }: { me: Me }) {
       </section>
 
       <StepsCard date={date} weightKg={me.weightKg} />
+      <WaterCard date={date} weightKg={me.weightKg} />
 
       {workout.logs && workout.logs.length > 0 && (
         <WorkoutToday logs={workout.logs} title={L.diary.workout} />

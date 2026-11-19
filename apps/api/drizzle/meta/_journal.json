@@ -71,6 +71,13 @@
       "when": 1795098542528,
       "tag": "0009_streak_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795099444311,
+      "tag": "0010_water",
+      "breakpoints": true
     }
   ]
 }

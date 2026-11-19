@@ -187,6 +187,20 @@ export const stepLogs = pgTable(
   (t) => [uniqueIndex('step_logs_user_date_idx').on(t.userId, t.date)],
 );
 
+/** Выпитая вода за день, одна запись на день. */
+export const waterLogs = pgTable(
+  'water_logs',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    ml: integer('ml').notNull(),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] })],
+);
+
 /** Каталог упражнений (импорт из free-exercise-db, id — slug оттуда). */
 export const exercises = pgTable(
   'exercises',

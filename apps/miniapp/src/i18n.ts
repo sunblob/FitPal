@@ -208,6 +208,13 @@ const ru = {
     chartAria: 'График веса',
     target: (kg: number) => `цель ${kg}`,
   },
+  water: {
+    title: 'Вода',
+    amount: (l: string, goal: string) => `${l} из ${goal} л`,
+    glass: (n: number) => `Стакан ${n}`,
+    more: 'Ещё стакан',
+    less: 'Убрать стакан',
+  },
   steps: {
     title: 'Шаги',
     walkingKcal: (kcal: number) => `≈ ${kcal} ккал на ходьбу`,
@@ -484,6 +491,13 @@ const en: Dict = {
     chartEmpty: 'No weigh-ins for this period yet.',
     chartAria: 'Weight chart',
     target: (kg) => `goal ${kg}`,
+  },
+  water: {
+    title: 'Water',
+    amount: (l, goal) => `${l} of ${goal} L`,
+    glass: (n) => `Glass ${n}`,
+    more: 'One more glass',
+    less: 'Remove a glass',
   },
   steps: {
     title: 'Steps',
