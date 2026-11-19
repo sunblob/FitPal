@@ -9,6 +9,7 @@ import {
   type Nutrients,
   type RecognizedFood,
 } from '@fitpal/shared';
+import { FoodThumb } from '../../components/FoodThumb';
 import { Icon } from '../../components/Icon';
 import { PhotoRecognize } from '../../components/PhotoRecognize';
 import { TextRecognize } from '../../components/TextRecognize';
@@ -269,6 +270,7 @@ function FoodSearch(props: {
         <div className="list">
           {items.map((f) => (
             <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
+              <FoodThumb imageUrl={f.imageUrl} category={f.category} />
               <span className="food-name">
                 {f.name}
                 {f.brand && <span className="muted small">{f.brand}</span>}
@@ -296,11 +298,14 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
 
   return (
     <div className="sheet-body">
-      <div>
-        <h2>{props.food.name}</h2>
-        <div className="muted small">
-          {props.food.brand ? `${props.food.brand} · ` : ''}
-          {Math.round(props.food.per100g.kcal)} ккал на 100 г
+      <div className="portion-head">
+        <FoodThumb imageUrl={props.food.imageUrl} category={props.food.category} size="large" />
+        <div>
+          <h2>{props.food.name}</h2>
+          <div className="muted small">
+            {props.food.brand ? `${props.food.brand} · ` : ''}
+            {Math.round(props.food.per100g.kcal)} ккал на 100 г
+          </div>
         </div>
       </div>
       <section className="card form">

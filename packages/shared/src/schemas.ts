@@ -119,6 +119,10 @@ export interface FoodDto {
   brand: string | null;
   barcode: string | null;
   source: FoodSource;
+  /** Фото товара (Open Food Facts), если есть. */
+  imageUrl: string | null;
+  /** Группа встроенного справочника для иконки: vegetables, dairy… */
+  category: string | null;
   per100g: Nutrients;
 }
 
@@ -130,6 +134,9 @@ export interface DiaryEntryDto {
   grams: number;
   eatenAt: string;
   nutrients: Nutrients;
+  /** Фото и группа продукта, если запись сделана из базы продуктов. */
+  imageUrl: string | null;
+  category: string | null;
 }
 
 export interface DiaryDayDto {

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   decodeEntities,
+  offImageUrl,
   parseOffProduct,
   preferCountries,
   type OffProduct,
@@ -26,6 +27,7 @@ test('parses product with kcal and prefers Russian name', () => {
       name: 'Гречка ядрица',
       brand: 'Мистраль',
       countries: [],
+      imageUrl: null,
       per100g: { kcal: 343, protein: 12.6, fat: 3.3, carbs: 62.1 },
     },
   );
@@ -67,6 +69,7 @@ test('preferCountries moves Slovak products first and keeps order', () => {
     name: barcode,
     brand: null,
     countries,
+    imageUrl: null,
     per100g: { kcal: 1, protein: 0, fat: 0, carbs: 0 },
   });
   const sorted = preferCountries(
@@ -89,4 +92,17 @@ test('decodes HTML entities in name and brand', () => {
   assert.equal(p?.name, 'Крупа "Камоліно" & рис');
   assert.equal(p?.brand, 'ООО "Агро-Альянс"');
   assert.equal(decodeEntities('a&#39;b &#x41; &unknown; &amp;'), "a'b A &unknown; &");
+});
+
+test('offImageUrl keeps only https images from Open Food Facts', () => {
+  assert.equal(
+    offImageUrl({
+      image_front_small_url: 'http://images.openfoodfacts.org/a.jpg',
+      image_front_url: 'https://images.openfoodfacts.org/images/products/123/front_sk.200.jpg',
+    }),
+    'https://images.openfoodfacts.org/images/products/123/front_sk.200.jpg',
+  );
+  assert.equal(offImageUrl({ image_url: 'https://evil.example.com/x.jpg' }), null);
+  assert.equal(offImageUrl({ image_url: 'not a url' }), null);
+  assert.equal(offImageUrl({}), null);
 });

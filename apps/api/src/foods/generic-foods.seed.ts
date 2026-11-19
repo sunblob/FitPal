@@ -9,6 +9,7 @@ import { buildSearchText } from './search-text.js';
 interface GenericFood {
   id: string;
   name: string;
+  category: string;
   aliases: string[];
   kcal: number;
   protein: number;
@@ -38,6 +39,7 @@ export async function seedGenericFoods(db: Database): Promise<number> {
         aliases,
         searchText: buildSearchText({ name: f.name, aliases }),
         sortOrder: i + j,
+        category: f.category,
         source: 'builtin' as const,
         ownerId: null,
         kcal: f.kcal,
@@ -56,6 +58,7 @@ export async function seedGenericFoods(db: Database): Promise<number> {
           aliases: sql`excluded.aliases`,
           searchText: sql`excluded.search_text`,
           sortOrder: sql`excluded.sort_order`,
+          category: sql`excluded.category`,
           kcal: sql`excluded.kcal`,
           protein: sql`excluded.protein`,
           fat: sql`excluded.fat`,
