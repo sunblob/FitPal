@@ -5,10 +5,11 @@ import {
   NotFoundException,
   type OnApplicationBootstrap,
 } from '@nestjs/common';
-import { and, desc, eq, gte, isNull, like, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, like, or, sql } from 'drizzle-orm';
 import type { CreateFood, FoodDto, Language, RecentFoodDto } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
 import { diaryEntries, favoriteFoods, foods, type Food } from '../db/schema.js';
+import { barcodeVariants } from './barcode-variants.js';
 import { localizedFoodName, toFoodDto } from './foods.mapper.js';
 import { seedGenericFoods } from './generic-foods.seed.js';
 import { OpenFoodFactsClient } from './open-food-facts.client.js';
@@ -70,7 +71,9 @@ export class FoodsService implements OnApplicationBootstrap {
 
   /** Продукт по штрихкоду: из кэша, иначе из Open Food Facts. */
   async byBarcode(code: string, lang: Language): Promise<FoodDto> {
-    const cached = await this.db.query.foods.findFirst({ where: eq(foods.barcode, code) });
+    const cached = await this.db.query.foods.findFirst({
+      where: inArray(foods.barcode, barcodeVariants(code)),
+    });
     if (cached) {
       // Кэш до появления картинок: подтягиваем фото в фоне, ответ не ждёт OFF
       if (cached.source === 'openfoodfacts' && !cached.imageUrl) void this.refreshImage(code);
@@ -242,7 +245,7 @@ export class FoodsService implements OnApplicationBootstrap {
   async create(userId: string, input: CreateFood, lang: Language): Promise<FoodDto> {
     if (input.barcode) {
       const existing = await this.db.query.foods.findFirst({
-        where: eq(foods.barcode, input.barcode),
+        where: inArray(foods.barcode, barcodeVariants(input.barcode)),
       });
       // Кто-то успел добавить этот штрихкод раньше: отдаём существующий продукт
       if (existing) return toFoodDto(existing, lang);
