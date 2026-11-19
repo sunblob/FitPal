@@ -11,6 +11,7 @@ import {
 } from '@fitpal/shared';
 import { Icon } from '../../components/Icon';
 import { PhotoRecognize } from '../../components/PhotoRecognize';
+import { TextRecognize } from '../../components/TextRecognize';
 import { api, post } from '../../lib/api';
 
 // Сканер тянет wasm на ~1 МБ, грузим его только когда он нужен
@@ -25,7 +26,8 @@ type Mode =
   | { kind: 'notFound'; code: string }
   | { kind: 'portion'; food: FoodDto }
   | { kind: 'manual' }
-  | { kind: 'photo' };
+  | { kind: 'photo' }
+  | { kind: 'text'; initial: string };
 
 const SHEET_SUBTITLES: Record<Mode['kind'], string> = {
   search: 'Добавить еду',
@@ -35,6 +37,7 @@ const SHEET_SUBTITLES: Record<Mode['kind'], string> = {
   portion: 'Порция',
   manual: 'Свой продукт',
   photo: 'Распознать по фото',
+  text: 'Описать словами',
 };
 
 const PORTIONS = [50, 100, 150, 200, 300];
@@ -122,6 +125,7 @@ export function AddFoodSheet(props: Props) {
           onManual={() => setMode({ kind: 'manual' })}
           onScan={() => setMode({ kind: 'scan' })}
           onPhoto={() => setMode({ kind: 'photo' })}
+          onDescribe={(initial) => setMode({ kind: 'text', initial })}
         />
       )}
       {mode.kind === 'portion' && (
@@ -168,6 +172,9 @@ export function AddFoodSheet(props: Props) {
       )}
       {mode.kind === 'manual' && <ManualFood onAdd={addEntry} />}
       {mode.kind === 'photo' && <PhotoRecognize onConfirm={addRecognized} />}
+      {mode.kind === 'text' && (
+        <TextRecognize initialText={mode.initial} onConfirm={addRecognized} />
+      )}
     </div>
   );
 }
@@ -177,6 +184,7 @@ function FoodSearch(props: {
   onManual: () => void;
   onScan: () => void;
   onPhoto: () => void;
+  onDescribe: (text: string) => void;
 }) {
   const [q, setQ] = useState('');
   const [items, setItems] = useState<FoodDto[] | null>(null);
@@ -218,6 +226,12 @@ function FoodSearch(props: {
           </span>
           По фото
         </button>
+        <button className="tile" onClick={() => props.onDescribe('')}>
+          <span className="tile-icon tile-ai">
+            <Icon name="sparkles" />
+          </span>
+          Словами
+        </button>
         <button className="tile" onClick={props.onScan}>
           <span className="tile-icon tile-barcode">
             <Icon name="barcode" />
@@ -231,11 +245,20 @@ function FoodSearch(props: {
           Вручную
         </button>
       </div>
+      {q.trim().length >= 2 && (
+        <button className="ai-suggest" onClick={() => props.onDescribe(q.trim())}>
+          <Icon name="sparkles" size={18} />
+          <span>
+            Посчитать «{q.trim()}» через ИИ
+            <span className="muted small">Если продукта нет в базе или это целое блюдо</span>
+          </span>
+        </button>
+      )}
       {loading && <div className="muted small">Ищу в базе продуктов…</div>}
       {!loading && items && items.length === 0 && (
         <p className="muted">
           {q
-            ? 'Ничего не нашлось. Добавь продукт вручную.'
+            ? 'В базе ничего не нашлось. Посчитай через ИИ или добавь продукт вручную.'
             : 'Здесь появятся продукты, которые ты добавляешь чаще всего.'}
         </p>
       )}

@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import {
-  scaleNutrients,
-  sumNutrients,
-  type PhotoRecognition,
-  type RecognizedFood,
-} from '@fitpal/shared';
+import type { PhotoRecognition, RecognizedFood } from '@fitpal/shared';
 import { post } from '../lib/api';
 import { prepareImage } from '../lib/image';
 import { Icon } from './Icon';
+import { RecognizedItems, aiErrorText } from './RecognizedItems';
 
 type State =
   | { kind: 'pick' }
@@ -19,7 +15,6 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
   const [state, setState] = useState<State>({ kind: 'pick' });
   const [hint, setHint] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -34,12 +29,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
       });
       setState({ kind: 'result', preview, items: res.items, note: res.note });
     } catch (e) {
-      const msg = (e as Error).message;
-      setError(
-        msg.startsWith('API 429')
-          ? 'Слишком много фото за час, попробуй позже.'
-          : 'Не получилось распознать фото. Попробуй ещё раз.',
-      );
+      setError(aiErrorText(e, 'Не получилось распознать фото. Попробуй ещё раз.'));
       setState({ kind: 'pick' });
     }
   }
@@ -75,73 +65,18 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
     );
   }
 
-  const { items } = state;
-  const update = (i: number, patch: Partial<RecognizedFood>) =>
-    setState({ ...state, items: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
-  const remove = (i: number) => setState({ ...state, items: items.filter((_, j) => j !== i) });
-  const valid = items.length > 0 && items.every((i) => i.grams > 0 && i.grams <= 5000);
-  const total = sumNutrients(items.map((i) => scaleNutrients(i.per100g, i.grams || 0)));
-
-  async function confirm() {
-    setSaving(true);
-    try {
-      await props.onConfirm(items);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <div className="sheet-body">
       <img className="photo-preview" src={state.preview} alt="" />
-      {items.length === 0 && (
+      {state.items.length === 0 && (
         <p className="muted">{state.note ?? 'Не нашёл еды на фото. Попробуй снять поближе.'}</p>
       )}
-      {items.map((item, i) => {
-        const n = scaleNutrients(item.per100g, item.grams || 0);
-        return (
-          <div key={i} className="card recognized">
-            <div className="recognized-head">
-              <input
-                className="name-input"
-                value={item.name}
-                onChange={(e) => update(i, { name: e.target.value })}
-              />
-              <button className="icon-btn small-btn" onClick={() => remove(i)} aria-label="Убрать">
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-            <div className="inline">
-              <label>
-                Граммы
-                <input
-                  inputMode="decimal"
-                  value={item.grams || ''}
-                  onChange={(e) => update(i, { grams: Number(e.target.value.replace(',', '.')) })}
-                />
-              </label>
-              <div className="recognized-kcal">
-                <div className="big">{n.kcal}</div>
-                <div className="muted small">
-                  Б {n.protein} · Ж {n.fat} · У {n.carbs}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-      {items.length > 0 && (
-        <>
-          {state.note && <p className="muted">{state.note}</p>}
-          <div className="recognized-total">
-            <span className="muted">Итого</span>
-            <b>{total.kcal} ккал</b>
-          </div>
-          <button className="primary" disabled={!valid || saving} onClick={confirm}>
-            {saving ? 'Записываю…' : 'Добавить в дневник'}
-          </button>
-        </>
-      )}
+      <RecognizedItems
+        items={state.items}
+        note={state.note}
+        onChange={(items) => setState({ ...state, items })}
+        onConfirm={props.onConfirm}
+      />
       <button className="ghost add" onClick={() => setState({ kind: 'pick' })}>
         Другое фото
       </button>

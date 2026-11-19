@@ -40,6 +40,12 @@ const PATHS = {
       <circle cx="12" cy="13" r="3.5" />
     </>
   ),
+  sparkles: (
+    <>
+      <path d="M10 4l1.6 4.4L16 10l-4.4 1.6L10 16l-1.6-4.4L4 10l4.4-1.6z" />
+      <path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z" />
+    </>
+  ),
   barcode: <path d="M4 5v14M7 5v14M11 5v14M14 5v14M17 5v14M20 5v14" />,
   pencil: (
     <>
