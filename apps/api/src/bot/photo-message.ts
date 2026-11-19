@@ -1,37 +1,38 @@
 import {
-  MEAL_LABELS_RU,
+  MEAL_LABELS,
+  MEAL_TYPES,
   scaleNutrients,
   sumNutrients,
+  type Language,
   type PhotoRecognition,
 } from '@fitpal/shared';
+import { BOT_TEXT } from './messages.js';
 
 /** Текст ответа бота с распознанными блюдами. */
 export function formatRecognition(
   result: PhotoRecognition,
   source: 'photo' | 'text' = 'photo',
+  lang: Language = 'ru',
 ): string {
+  const t = BOT_TEXT[lang];
   if (result.items.length === 0) {
-    return (
-      result.note ??
-      (source === 'photo'
-        ? 'Не нашёл еды на фото. Попробуй снять поближе.'
-        : 'Не понял, что за еда. Опиши подробнее, например: «гречка 200 г и котлета».')
-    );
+    return result.note ?? (source === 'photo' ? t.noFoodPhoto : t.noFoodText);
   }
   const portions = result.items.map((i) => ({ item: i, n: scaleNutrients(i.per100g, i.grams) }));
   const total = sumNutrients(portions.map((p) => p.n));
-  const lines = portions.map(({ item, n }) => `• ${item.name}, ${item.grams} г: ${n.kcal} ккал`);
+  const lines = portions.map(({ item, n }) => t.item(item.name, item.grams, n.kcal));
   return [
-    source === 'photo' ? 'Вот что я вижу:' : 'Вот как я это посчитал:',
+    source === 'photo' ? t.seePhoto : t.seeText,
     ...lines,
     '',
-    `Итого ${total.kcal} ккал · Б ${total.protein} · Ж ${total.fat} · У ${total.carbs}`,
+    t.total(total.kcal, total.protein, total.fat, total.carbs),
     ...(result.note ? ['', result.note] : []),
     '',
-    'Куда записать?',
+    t.whereToSave,
   ].join('\n');
 }
 
-export const MEAL_BUTTONS = (
-  Object.entries(MEAL_LABELS_RU) as [keyof typeof MEAL_LABELS_RU, string][]
-).map(([meal, label]) => ({ meal, label }));
+/** Кнопки приёмов пищи на языке пользователя. */
+export function mealButtons(lang: Language) {
+  return MEAL_TYPES.map((meal) => ({ meal, label: MEAL_LABELS[lang][meal] }));
+}

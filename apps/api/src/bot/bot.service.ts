@@ -8,10 +8,14 @@ import { randomBytes } from 'node:crypto';
 import { Bot, InlineKeyboard, type Context } from 'grammy';
 import type { Update } from 'grammy/types';
 import {
+  languageSchema,
+  LANGUAGE_NAMES,
+  LANGUAGES,
   mealTypeSchema,
   recognizeTextSchema,
   scaleNutrients,
   sumNutrients,
+  type Language,
   type PhotoRecognition,
   type RecognizedFood,
 } from '@fitpal/shared';
@@ -19,11 +23,13 @@ import { Env } from '../config/env.js';
 import { DiaryService } from '../diary/diary.service.js';
 import { RecognitionService } from '../recognition/recognition.service.js';
 import { UsersService } from '../users/users.service.js';
-import { MEAL_BUTTONS, formatRecognition } from './photo-message.js';
+import { BOT_TEXT } from './messages.js';
+import { formatRecognition, mealButtons } from './photo-message.js';
 
 /** Распознанная, но ещё не записанная еда. Живёт в памяти: после рестарта пользователь пришлёт её заново. */
 interface PendingFood {
   userId: string;
+  lang: Language;
   items: RecognizedFood[];
   expiresAt: number;
 }
@@ -52,17 +58,19 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     this.bot.command('start', async (ctx) => {
       if (!ctx.from) return;
       const user = await this.users.upsertFromTelegram(ctx.from);
-      const name = user.firstName ?? 'друг';
-
-      const keyboard = this.miniAppKeyboard();
-
-      await ctx.reply(
-        `Привет, ${name}! Я FitPal и помогу считать калории.\n\n` +
-          'Записывай еду вручную, ищи в базе, сканируй штрихкод, пришли фото тарелки ' +
-          'или просто напиши, что съел: «овсянка на молоке и банан».',
-        { reply_markup: keyboard },
-      );
+      await ctx.reply(BOT_TEXT[user.language].greeting(user.firstName), {
+        reply_markup: this.miniAppKeyboard(user.language),
+      });
     });
+
+    this.bot.command('language', async (ctx) => {
+      if (!ctx.from) return;
+      const user = await this.users.upsertFromTelegram(ctx.from);
+      const keyboard = new InlineKeyboard();
+      for (const lang of LANGUAGES) keyboard.text(LANGUAGE_NAMES[lang], `lang:${lang}`);
+      await ctx.reply(BOT_TEXT[user.language].chooseLanguage, { reply_markup: keyboard });
+    });
+    this.bot.callbackQuery(/^lang:(\w+)$/, (ctx) => this.onLanguageChoice(ctx));
 
     this.bot.on('message:photo', (ctx) => this.onPhoto(ctx));
     this.bot.on('message:text', (ctx) => this.onText(ctx));
@@ -71,16 +79,26 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     this.bot.catch((err) => this.logger.error(err.error, err.stack));
   }
 
-  private miniAppKeyboard() {
+  private miniAppKeyboard(lang: Language) {
     return this.env.MINIAPP_URL
-      ? new InlineKeyboard().webApp('Открыть дневник', this.env.MINIAPP_URL)
+      ? new InlineKeyboard().webApp(BOT_TEXT[lang].openDiary, this.env.MINIAPP_URL)
       : undefined;
+  }
+
+  private async onLanguageChoice(ctx: Context) {
+    const parsed = languageSchema.safeParse((ctx.match as RegExpMatchArray)[1]);
+    if (!ctx.from || !parsed.success) return;
+    const user = await this.users.upsertFromTelegram(ctx.from);
+    await this.users.setLanguage(user.id, parsed.data);
+    const t = BOT_TEXT[parsed.data];
+    await ctx.answerCallbackQuery();
+    await ctx.editMessageText(t.languageSet, { reply_markup: this.miniAppKeyboard(parsed.data) });
   }
 
   private async onPhoto(ctx: Context) {
     const photo = ctx.message?.photo?.at(-1);
     if (!ctx.from || !photo) return;
-    await this.recognizeAndOffer(ctx, 'photo', async (userId) => {
+    await this.recognizeAndOffer(ctx, 'photo', async (userId, lang) => {
       const file = await ctx.api.getFile(photo.file_id);
       const res = await fetch(
         `https://api.telegram.org/file/bot${this.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`,
@@ -90,6 +108,7 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
       return this.recognition.recognize(
         userId,
         { mediaType: 'image/jpeg', data },
+        lang,
         ctx.message?.caption,
       );
     });
@@ -101,11 +120,12 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     if (!ctx.from || !text || text.startsWith('/')) return;
     const parsed = recognizeTextSchema.safeParse({ text });
     if (!parsed.success) {
-      await ctx.reply('Опиши еду короче, до 500 символов. Например: «гречка 200 г и котлета».');
+      const user = await this.users.upsertFromTelegram(ctx.from);
+      await ctx.reply(BOT_TEXT[user.language].tooLong);
       return;
     }
-    await this.recognizeAndOffer(ctx, 'text', (userId) =>
-      this.recognition.recognizeText(userId, parsed.data.text),
+    await this.recognizeAndOffer(ctx, 'text', (userId, lang) =>
+      this.recognition.recognizeText(userId, parsed.data.text, lang),
     );
   }
 
@@ -113,19 +133,21 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
   private async recognizeAndOffer(
     ctx: Context,
     source: 'photo' | 'text',
-    run: (userId: string) => Promise<PhotoRecognition>,
+    run: (userId: string, lang: Language) => Promise<PhotoRecognition>,
   ) {
     if (!ctx.from) return;
+    const user = await this.users.upsertFromTelegram(ctx.from);
+    const lang = user.language;
+    const t = BOT_TEXT[lang];
     if (!this.recognition.enabled) {
-      await ctx.reply('Распознавание еды через ИИ пока не настроено.');
+      await ctx.reply(t.aiDisabled);
       return;
     }
-    const user = await this.users.upsertFromTelegram(ctx.from);
-    const status = await ctx.reply(source === 'photo' ? 'Смотрю на фото…' : 'Считаю…');
+    const status = await ctx.reply(source === 'photo' ? t.lookingAtPhoto : t.counting);
 
     try {
-      const result = await run(user.id);
-      const text = formatRecognition(result, source);
+      const result = await run(user.id, lang);
+      const text = formatRecognition(result, source, lang);
       if (result.items.length === 0) {
         await ctx.api.editMessageText(status.chat.id, status.message_id, text);
         return;
@@ -135,16 +157,17 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
       const id = randomBytes(6).toString('hex');
       this.pending.set(id, {
         userId: user.id,
+        lang,
         items: result.items,
         expiresAt: Date.now() + PENDING_TTL_MS,
       });
 
       const keyboard = new InlineKeyboard();
-      MEAL_BUTTONS.forEach(({ meal, label }, i) => {
+      mealButtons(lang).forEach(({ meal, label }, i) => {
         keyboard.text(label, `ph:${id}:${meal}`);
         if (i % 2 === 1) keyboard.row();
       });
-      keyboard.text('Не записывать', `ph:${id}:cancel`);
+      keyboard.text(t.dontSave, `ph:${id}:cancel`);
       await ctx.api.editMessageText(status.chat.id, status.message_id, text, {
         reply_markup: keyboard,
       });
@@ -152,10 +175,10 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
       this.logger.error(`Food recognition (${source}) failed: ${(e as Error).message}`);
       const message =
         (e as { status?: number }).status === 429
-          ? 'Слишком много запросов к ИИ за час, попробуй позже.'
+          ? t.rateLimited
           : source === 'photo'
-            ? 'Не получилось распознать фото. Попробуй ещё раз или добавь еду в дневнике.'
-            : 'Не получилось посчитать. Попробуй ещё раз или добавь еду в дневнике.';
+            ? t.photoFailed
+            : t.textFailed;
       await ctx.api.editMessageText(status.chat.id, status.message_id, message);
     }
   }
@@ -164,7 +187,8 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     const [, id, choice] = ctx.match as RegExpMatchArray;
     const entry = id ? this.pending.get(id) : undefined;
     if (!entry || entry.expiresAt < Date.now()) {
-      await ctx.answerCallbackQuery({ text: 'Это уже неактуально, пришли ещё раз.' });
+      const user = ctx.from && (await this.users.findByTelegramId(ctx.from.id));
+      await ctx.answerCallbackQuery({ text: BOT_TEXT[user ? user.language : 'en'].expired });
       return;
     }
     this.pending.delete(id!);
@@ -176,13 +200,14 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     }
     const meal = mealTypeSchema.parse(choice);
     for (const item of entry.items) {
-      await this.diary.add(entry.userId, { ...item, meal });
+      await this.diary.add(entry.userId, { ...item, meal }, entry.lang);
     }
     const total = sumNutrients(entry.items.map((i) => scaleNutrients(i.per100g, i.grams)));
-    const label = MEAL_BUTTONS.find((b) => b.meal === meal)?.label.toLowerCase() ?? meal;
-    await ctx.answerCallbackQuery({ text: 'Записал' });
-    await ctx.editMessageText(`Записал в ${label}: ${total.kcal} ккал.`, {
-      reply_markup: this.miniAppKeyboard(),
+    const t = BOT_TEXT[entry.lang];
+    const label = mealButtons(entry.lang).find((b) => b.meal === meal)?.label ?? meal;
+    await ctx.answerCallbackQuery({ text: t.saved });
+    await ctx.editMessageText(t.savedTo(label, total.kcal), {
+      reply_markup: this.miniAppKeyboard(entry.lang),
     });
   }
 
@@ -197,7 +222,17 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
       return;
     }
     await this.bot.init();
-    await this.bot.api.setMyCommands([{ command: 'start', description: 'Начать' }]);
+    // Список команд по умолчанию на английском, для русского интерфейса Telegram на русском
+    for (const lang of LANGUAGES) {
+      const { commands } = BOT_TEXT[lang];
+      await this.bot.api.setMyCommands(
+        [
+          { command: 'start', description: commands.start },
+          { command: 'language', description: commands.language },
+        ],
+        lang === 'en' ? {} : { language_code: lang },
+      );
+    }
 
     if (this.env.TELEGRAM_BOT_MODE === 'webhook') {
       if (!this.env.PUBLIC_API_URL) throw new Error('PUBLIC_API_URL is required in webhook mode');

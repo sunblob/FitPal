@@ -28,7 +28,7 @@ export class DiaryController {
 
   @Post()
   add(@CurrentUser() user: User, @Body() body: CreateDiaryEntryDto) {
-    return this.diary.add(user.id, body);
+    return this.diary.add(user.id, body, user.language);
   }
 
   @Delete(':id')

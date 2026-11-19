@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
-  MEAL_LABELS_RU,
+  MEAL_LABELS,
   nutrientsSchema,
   scaleNutrients,
   type CreateDiaryEntry,
@@ -15,6 +15,7 @@ import { Icon } from '../../components/Icon';
 import { PhotoRecognize } from '../../components/PhotoRecognize';
 import { aiErrorText } from '../../components/RecognizedItems';
 import { TextRecognize } from '../../components/TextRecognize';
+import { getLanguage, L } from '../../i18n';
 import { api, post } from '../../lib/api';
 import { prepareImage } from '../../lib/image';
 
@@ -32,17 +33,6 @@ type Mode =
   | { kind: 'manual'; barcode?: string }
   | { kind: 'photo' }
   | { kind: 'text'; initial: string };
-
-const SHEET_SUBTITLES: Record<Mode['kind'], string> = {
-  search: 'Добавить еду',
-  scan: 'Сканер штрихкода',
-  lookup: 'Сканер штрихкода',
-  notFound: 'Сканер штрихкода',
-  portion: 'Порция',
-  manual: 'Свой продукт',
-  photo: 'Распознать по фото',
-  text: 'Описать словами',
-};
 
 const PORTIONS = [50, 100, 150, 200, 300];
 
@@ -112,13 +102,13 @@ export function AddFoodSheet(props: Props) {
         <button
           className="icon-btn"
           onClick={mode.kind === 'search' ? props.onClose : () => setMode({ kind: 'search' })}
-          aria-label={mode.kind === 'search' ? 'Закрыть' : 'Назад'}
+          aria-label={mode.kind === 'search' ? L.common.close : L.common.back}
         >
           <Icon name={mode.kind === 'search' ? 'close' : 'back'} />
         </button>
         <div className="sheet-title">
-          <strong>{MEAL_LABELS_RU[props.meal]}</strong>
-          <span className="muted small">{SHEET_SUBTITLES[mode.kind]}</span>
+          <strong>{MEAL_LABELS[getLanguage()][props.meal]}</strong>
+          <span className="muted small">{L.add.subtitles[mode.kind]}</span>
         </div>
         <span />
       </div>
@@ -149,7 +139,7 @@ export function AddFoodSheet(props: Props) {
         <Suspense
           fallback={
             <div className="sheet-body">
-              <p className="muted">Запускаю камеру…</p>
+              <p className="muted">{L.add.startingCamera}</p>
             </div>
           }
         >
@@ -158,26 +148,25 @@ export function AddFoodSheet(props: Props) {
       )}
       {mode.kind === 'lookup' && (
         <div className="sheet-body">
-          <p className="muted">Ищу продукт {mode.code}…</p>
+          <p className="muted">{L.add.lookingUp(mode.code)}</p>
         </div>
       )}
       {mode.kind === 'notFound' && (
         <div className="sheet-body">
           <p>
-            Продукта со штрихкодом <strong>{mode.code}</strong> нет в базе.
+            {L.add.notFoundBefore}
+            <strong>{mode.code}</strong>
+            {L.add.notFoundAfter}
           </p>
-          <p className="muted small">
-            Добавь его сам: название и КБЖУ с упаковки (можно сфотографировать этикетку). В
-            следующий раз этот штрихкод найдётся сразу.
-          </p>
+          <p className="muted small">{L.add.notFoundHint}</p>
           <button
             className="primary"
             onClick={() => setMode({ kind: 'manual', barcode: mode.code })}
           >
-            Добавить продукт
+            {L.add.addProduct}
           </button>
           <button className="ghost add" onClick={() => setMode({ kind: 'scan' })}>
-            Сканировать ещё раз
+            {L.add.scanAgain}
           </button>
         </div>
       )}
@@ -225,7 +214,7 @@ function FoodSearch(props: {
         <input
           autoFocus
           type="search"
-          placeholder="Поиск продукта"
+          placeholder={L.add.searchPlaceholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -235,46 +224,42 @@ function FoodSearch(props: {
           <span className="tile-icon tile-photo">
             <Icon name="camera" />
           </span>
-          По фото
+          {L.add.byPhoto}
         </button>
         <button className="tile" onClick={() => props.onDescribe('')}>
           <span className="tile-icon tile-ai">
             <Icon name="sparkles" />
           </span>
-          Словами
+          {L.add.inWords}
         </button>
         <button className="tile" onClick={props.onScan}>
           <span className="tile-icon tile-barcode">
             <Icon name="barcode" />
           </span>
-          Штрихкод
+          {L.add.barcode}
         </button>
         <button className="tile" onClick={props.onManual}>
           <span className="tile-icon tile-manual">
             <Icon name="pencil" />
           </span>
-          Вручную
+          {L.add.manually}
         </button>
       </div>
       {q.trim().length >= 2 && (
         <button className="ai-suggest" onClick={() => props.onDescribe(q.trim())}>
           <Icon name="sparkles" size={18} />
           <span>
-            Посчитать «{q.trim()}» через ИИ
-            <span className="muted small">Если продукта нет в базе или это целое блюдо</span>
+            {L.add.aiSuggest(q.trim())}
+            <span className="muted small">{L.add.aiSuggestHint}</span>
           </span>
         </button>
       )}
-      {loading && <div className="muted small">Ищу в базе продуктов…</div>}
+      {loading && <div className="muted small">{L.add.searching}</div>}
       {!loading && items && items.length === 0 && (
-        <p className="muted">
-          {q
-            ? 'В базе ничего не нашлось. Посчитай через ИИ или добавь продукт вручную.'
-            : 'Здесь появятся продукты, которые ты добавляешь чаще всего.'}
-        </p>
+        <p className="muted">{q ? L.add.nothingFound : L.add.frequentEmpty}</p>
       )}
       {!loading && items && items.length > 0 && (
-        <div className="section-label">{q ? 'Результаты' : 'Часто добавляешь'}</div>
+        <div className="section-label">{q ? L.add.results : L.add.frequent}</div>
       )}
       {items && items.length > 0 && (
         <div className="list">
@@ -287,7 +272,7 @@ function FoodSearch(props: {
               </span>
               <span className="food-kcal">
                 <b>{Math.round(f.per100g.kcal)}</b>
-                <span className="muted small">ккал / 100 г</span>
+                <span className="muted small">{L.add.per100}</span>
               </span>
               <span className="food-add" aria-hidden="true">
                 <Icon name="plus" size={18} />
@@ -314,13 +299,13 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
           <h2>{props.food.name}</h2>
           <div className="muted small">
             {props.food.brand ? `${props.food.brand} · ` : ''}
-            {Math.round(props.food.per100g.kcal)} ккал на 100 г
+            {L.add.kcalPer100(Math.round(props.food.per100g.kcal))}
           </div>
         </div>
       </div>
       <section className="card form">
         <label>
-          Вес порции, г
+          {L.add.portionWeight}
           <input
             className="input-big"
             autoFocus
@@ -336,14 +321,14 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
               className={g === p ? 'chip chip-on' : 'chip'}
               onClick={() => setGrams(String(p))}
             >
-              {p} г
+              {p} {L.common.g}
             </button>
           ))}
         </div>
       </section>
       {n && <NutrientsLine n={n} />}
       <button className="primary" disabled={!valid} onClick={() => props.onAdd(g)}>
-        Добавить
+        {L.common.add}
       </button>
     </div>
   );
@@ -415,16 +400,14 @@ function ManualFood(props: {
       if (res.brand && !brand.trim()) setBrand(res.brand);
       setLabel({
         busy: false,
-        note: res.per100g
-          ? (res.note ?? 'Заполнил по этикетке, проверь значения.')
-          : (res.note ?? 'Не получилось прочитать таблицу. Сфотографируй её ближе и ровнее.'),
+        note: res.per100g ? (res.note ?? L.add.labelFilled) : (res.note ?? L.add.labelUnreadable),
         error: null,
       });
     } catch (e) {
       setLabel({
         busy: false,
         note: null,
-        error: aiErrorText(e, 'Не получилось прочитать этикетку. Введи значения вручную.'),
+        error: aiErrorText(e, L.add.labelFailed),
       });
     }
   }
@@ -446,14 +429,14 @@ function ManualFood(props: {
         <div className="barcode-note">
           <Icon name="barcode" size={18} />
           <span>
-            Штрихкод <b>{barcode}</b>
+            {L.add.barcodeLabel} <b>{barcode}</b>
           </span>
         </div>
       )}
       {barcode && (
         <label className={label.busy ? 'file-button busy' : 'file-button'}>
           <Icon name="camera" />
-          {label.busy ? 'Читаю этикетку…' : 'Заполнить по фото этикетки'}
+          {label.busy ? L.add.readingLabel : L.add.fillFromLabel}
           <input
             type="file"
             accept="image/*"
@@ -466,40 +449,37 @@ function ManualFood(props: {
       {label.error && <p className="error-text small">{label.error}</p>}
       <section className="card form">
         <label>
-          Название
+          {L.add.name}
           <input
             autoFocus={!barcode}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={barcode ? 'Как написано на упаковке' : 'Например, сырники'}
+            placeholder={barcode ? L.add.namePlaceholderBarcode : L.add.namePlaceholder}
           />
         </label>
         {barcode && (
           <label>
-            Бренд (необязательно)
+            {L.add.brand}
             <input value={brand} onChange={(e) => setBrand(e.target.value)} />
           </label>
         )}
         <div>
-          <div className="label">На 100 г</div>
+          <div className="label">{L.add.per100g}</div>
           <div className="row4">
-            {field('kcal', 'Ккал')}
-            {field('protein', 'Белки')}
-            {field('fat', 'Жиры')}
-            {field('carbs', 'Углев.')}
+            {field('kcal', L.add.kcalShort)}
+            {field('protein', L.common.protein)}
+            {field('fat', L.common.fat)}
+            {field('carbs', L.add.carbsShort)}
           </div>
         </div>
         <label>
-          Вес порции, г
+          {L.add.portionWeight}
           <input inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} />
         </label>
       </section>
       {valid && per100g.success && <NutrientsLine n={scaleNutrients(per100g.data, g)} />}
       {barcode ? (
-        <p className="muted small">
-          Продукт сохранится по штрихкоду: при следующем скане он найдётся сразу, в том числе у
-          друзей.
-        </p>
+        <p className="muted small">{L.add.barcodeSaveHint}</p>
       ) : (
         <label className="check">
           <input
@@ -507,11 +487,11 @@ function ManualFood(props: {
             checked={saveFood}
             onChange={(e) => setSaveFood(e.target.checked)}
           />
-          Сохранить в мои продукты
+          {L.add.saveToMine}
         </label>
       )}
       <button className="primary" disabled={!valid || busy} onClick={submit}>
-        Добавить
+        {L.common.add}
       </button>
     </div>
   );
@@ -522,19 +502,19 @@ function NutrientsLine({ n }: { n: Nutrients }) {
     <div className="nutrients">
       <div className="nutrient nutrient-kcal">
         <b>{Math.round(n.kcal)}</b>
-        <span>ккал</span>
+        <span>{L.common.kcal}</span>
       </div>
       <div className="nutrient nutrient-protein">
         <b>{n.protein}</b>
-        <span>белки, г</span>
+        <span>{L.add.proteinG}</span>
       </div>
       <div className="nutrient nutrient-fat">
         <b>{n.fat}</b>
-        <span>жиры, г</span>
+        <span>{L.add.fatG}</span>
       </div>
       <div className="nutrient nutrient-carbs">
         <b>{n.carbs}</b>
-        <span>углев., г</span>
+        <span>{L.add.carbsG}</span>
       </div>
     </div>
   );

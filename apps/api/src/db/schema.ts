@@ -25,6 +25,7 @@ export const activityEnum = pgEnum('activity_level', [
 export const goalEnum = pgEnum('goal', ['lose', 'maintain', 'gain']);
 export const foodSourceEnum = pgEnum('food_source', ['manual', 'openfoodfacts', 'builtin', 'ai']);
 export const mealEnum = pgEnum('meal_type', ['breakfast', 'lunch', 'dinner', 'snack']);
+export const languageEnum = pgEnum('language', ['en', 'ru']);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -40,6 +41,8 @@ export const users = pgTable('users', {
   username: text('username'),
   firstName: text('first_name'),
   languageCode: text('language_code'),
+  /** Язык интерфейса, бота и ответов ИИ. При регистрации берётся из language_code. */
+  language: languageEnum('language').notNull().default('en'),
   sex: sexEnum('sex'),
   birthYear: integer('birth_year'),
   heightCm: real('height_cm'),
@@ -62,6 +65,8 @@ export const foods = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
+    /** Английское название (есть у встроенного справочника), для пользователей с English. */
+    nameEn: text('name_en'),
     brand: text('brand'),
     barcode: text('barcode').unique(),
     /** Ключ встроенного справочника (usda:<fdc_id> или ref:<slug>), по нему обновляется сид. */

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  LEVEL_LABELS_RU,
-  MUSCLE_LABELS_RU,
-  WORKOUT_GOAL_LABELS_RU,
+  LEVEL_LABELS,
+  MUSCLE_LABELS,
+  WORKOUT_GOAL_LABELS,
   type ExerciseDto,
   type GenerateWorkoutPlan,
   type Muscle,
@@ -12,6 +12,7 @@ import {
 } from '@fitpal/shared';
 import { Icon } from '../../components/Icon';
 import { WorkoutToday } from '../../components/WorkoutToday';
+import { getLanguage, L, locale } from '../../i18n';
 import { api, type Me } from '../../lib/api';
 import { useWorkoutLog } from '../../lib/workoutLog';
 import { ExerciseAnimation } from './ExerciseAnimation';
@@ -36,7 +37,7 @@ type View =
 type PlanItem = WorkoutPlanDto['days'][number]['exercises'][number];
 type ExerciseDose = Omit<PlanItem, 'exercise'>;
 
-const muscleLabel = (m: string) => MUSCLE_LABELS_RU[m as Muscle] ?? m;
+const muscleLabel = (m: string) => MUSCLE_LABELS[getLanguage()][m as Muscle] ?? m;
 
 /** Понятный текст ошибки вместо «API 503: {json}». */
 function errorMessage(e: unknown): string {
@@ -51,7 +52,7 @@ function errorMessage(e: unknown): string {
   } catch {
     // не JSON, показываем как есть
   }
-  return raw.startsWith('API ') ? 'Что-то пошло не так. Попробуй ещё раз.' : raw;
+  return raw.startsWith('API ') ? L.common.somethingWrong : raw;
 }
 
 export function WorkoutsPage({ me }: { me: Me }) {
@@ -120,7 +121,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
   // Если инструкции ещё нет на русском, сервер переводит её по запросу. Пока ждём,
   // показываем заглушку, а не английский текст, который через секунду сменится русским.
   const openExercise = ({ exercise, ...dose }: PlanItem, back: View) => {
-    const translating = exercise.instructionsLang === 'en';
+    const translating = getLanguage() === 'ru' && exercise.instructionsLang === 'en';
     setView({ kind: 'exercise', exercise, dose, translating, back });
     if (!translating) return;
     const done = (full?: ExerciseDto) =>
@@ -140,7 +141,11 @@ export function WorkoutsPage({ me }: { me: Me }) {
     return (
       <>
         <div className="wk-topbar">
-          <button className="icon-btn" onClick={() => setView({ kind: 'list' })} aria-label="Назад">
+          <button
+            className="icon-btn"
+            onClick={() => setView({ kind: 'list' })}
+            aria-label={L.common.back}
+          >
             <Icon name="back" />
           </button>
         </div>
@@ -154,7 +159,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
     const ex = view.exercise;
     return (
       <main className="screen">
-        <button className="icon-btn" onClick={() => setView(view.back)} aria-label="Назад">
+        <button className="icon-btn" onClick={() => setView(view.back)} aria-label={L.common.back}>
           <Icon name="back" />
         </button>
         <div>
@@ -165,9 +170,9 @@ export function WorkoutsPage({ me }: { me: Me }) {
         {view.dose && (
           <section className="wk-dose">
             <div className="wk-facts">
-              <Fact value={String(view.dose.sets)} label="подходов" />
-              <Fact value={view.dose.reps} label="повторений" />
-              <Fact value={`${view.dose.restSec} с`} label="отдых" />
+              <Fact value={String(view.dose.sets)} label={L.workouts.factSets} />
+              <Fact value={view.dose.reps} label={L.workouts.factReps} />
+              <Fact value={L.workouts.seconds(view.dose.restSec)} label={L.workouts.factRest} />
             </div>
             {view.dose.notes && <p className="wk-dose-notes">{view.dose.notes}</p>}
           </section>
@@ -185,7 +190,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
             }
           >
             <Icon name="check" size={20} />
-            {log.isDone(ex.id) ? 'Сделано сегодня' : 'Отметить выполненным'}
+            {log.isDone(ex.id) ? L.workouts.doneToday : L.workouts.markDone}
           </button>
         )}
         {errorBox}
@@ -203,8 +208,8 @@ export function WorkoutsPage({ me }: { me: Me }) {
         </div>
         {view.translating ? (
           <section className="card" aria-busy="true">
-            <div className="card-title">Как выполнять</div>
-            <div className="wk-steps-skeleton" aria-label="Загружаем технику">
+            <div className="card-title">{L.workouts.howTo}</div>
+            <div className="wk-steps-skeleton" aria-label={L.workouts.loadingHowTo}>
               <span />
               <span />
               <span />
@@ -213,7 +218,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
         ) : (
           ex.instructions.length > 0 && (
             <section className="card">
-              <div className="card-title">Как выполнять</div>
+              <div className="card-title">{L.workouts.howTo}</div>
               <ol className="wk-steps">
                 {ex.instructions.map((step, i) => (
                   <li key={i}>{step}</li>
@@ -223,7 +228,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
           )
         )}
         <a className="wk-yt" href={ex.youtubeUrl} target="_blank" rel="noreferrer">
-          ▶ Видео с техникой
+          {L.workouts.video}
         </a>
       </main>
     );
@@ -236,7 +241,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
         <button
           className="icon-btn"
           onClick={() => setView({ kind: 'list' })}
-          aria-label="К списку планов"
+          aria-label={L.workouts.toPlans}
         >
           <Icon name="back" />
         </button>
@@ -248,10 +253,16 @@ export function WorkoutsPage({ me }: { me: Me }) {
           <h1 className="wk-title">{plan.title}</h1>
           {plan.summary && <p className="wk-plan-summary">{plan.summary}</p>}
           <div className="wk-facts">
-            <Fact value={String(plan.params.daysPerWeek)} label="трен. в неделю" />
-            <Fact value={String(plan.params.sessionMinutes)} label="минут" />
-            <Fact value={WORKOUT_GOAL_LABELS_RU[plan.params.goal]} label="цель" />
-            <Fact value={LEVEL_LABELS_RU[plan.params.level]} label="уровень" />
+            <Fact value={String(plan.params.daysPerWeek)} label={L.workouts.factPerWeek} />
+            <Fact value={String(plan.params.sessionMinutes)} label={L.workouts.factMinutes} />
+            <Fact
+              value={WORKOUT_GOAL_LABELS[getLanguage()][plan.params.goal]}
+              label={L.workouts.factGoal}
+            />
+            <Fact
+              value={LEVEL_LABELS[getLanguage()][plan.params.level]}
+              label={L.workouts.factLevel}
+            />
           </div>
         </section>
 
@@ -265,8 +276,11 @@ export function WorkoutsPage({ me }: { me: Me }) {
               </div>
               <span className="muted small nowrap">
                 {day.exercises.some((i) => log.isDone(i.exercise.id))
-                  ? `${day.exercises.filter((i) => log.isDone(i.exercise.id)).length} из ${day.exercises.length}`
-                  : `${day.exercises.length} упр.`}
+                  ? L.workouts.doneOf(
+                      day.exercises.filter((i) => log.isDone(i.exercise.id)).length,
+                      day.exercises.length,
+                    )
+                  : L.workouts.exShort(day.exercises.length)}
               </span>
             </div>
             <div className="wk-ex-list">
@@ -284,7 +298,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
                         <span className="tag tag-accent">
                           {item.sets} × {item.reps}
                         </span>
-                        <span className="tag">отдых {item.restSec} с</span>
+                        <span className="tag">{L.workouts.rest(item.restSec)}</span>
                       </span>
                       {item.notes && <span className="muted small">{item.notes}</span>}
                     </span>
@@ -293,7 +307,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
                     className={log.isDone(item.exercise.id) ? 'wk-check on' : 'wk-check'}
                     disabled={busy || log.logs == null}
                     aria-pressed={log.isDone(item.exercise.id)}
-                    aria-label={`Сделано: ${item.exercise.name}`}
+                    aria-label={L.workouts.doneAria(item.exercise.name)}
                     onClick={() => toggleDone(item.exercise.id, item.sets, plan.id)}
                   >
                     <Icon name="check" size={18} />
@@ -306,7 +320,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
 
         {plan.tips.length > 0 && (
           <section className="card wk-tips">
-            <div className="card-title">Советы</div>
+            <div className="card-title">{L.workouts.tips}</div>
             <ul className="wk-steps">
               {plan.tips.map((t, i) => (
                 <li key={i}>{t}</li>
@@ -315,7 +329,7 @@ export function WorkoutsPage({ me }: { me: Me }) {
           </section>
         )}
         <button className="wk-danger" disabled={busy} onClick={() => removePlan(plan.id)}>
-          Удалить план
+          {L.workouts.deletePlan}
         </button>
         {errorBox}
       </main>
@@ -324,32 +338,29 @@ export function WorkoutsPage({ me }: { me: Me }) {
 
   return (
     <main className="screen">
-      <h1>Тренировки</h1>
+      <h1>{L.workouts.title}</h1>
       {log.logs && (
         <WorkoutToday
           logs={log.logs}
-          title="Сегодня"
+          title={L.workouts.today}
           showList
-          empty="Открой план и отмечай упражнения, которые сделал"
+          empty={L.workouts.todayEmpty}
         />
       )}
       <section className="card wk-cta">
         <div className="wk-cta-icon">
           <Icon name="dumbbell" size={28} />
         </div>
-        <div className="card-title">Персональный план</div>
-        <p className="muted">
-          Выбери цель, мышцы и инвентарь. План с подходами, отдыхом и техникой будет готов за
-          минуту.
-        </p>
+        <div className="card-title">{L.workouts.ctaTitle}</div>
+        <p className="muted">{L.workouts.ctaText}</p>
         <button className="primary" onClick={() => setView({ kind: 'form' })}>
-          Составить план
+          {L.workouts.makePlan}
         </button>
       </section>
 
       {plans && plans.length > 0 && (
         <>
-          <div className="section-label">Мои планы</div>
+          <div className="section-label">{L.workouts.myPlans}</div>
           <div className="list">
             {plans.map((p) => (
               <button
@@ -364,8 +375,8 @@ export function WorkoutsPage({ me }: { me: Me }) {
                 <span className="food-name">
                   {p.title}
                   <span className="muted small">
-                    {p.daysCount} трен. в неделю ·{' '}
-                    {new Date(p.createdAt).toLocaleDateString('ru-RU', {
+                    {L.workouts.perWeek(p.daysCount)} ·{' '}
+                    {new Date(p.createdAt).toLocaleDateString(locale(), {
                       day: 'numeric',
                       month: 'long',
                     })}
@@ -393,30 +404,23 @@ function Fact(props: { value: string; label: string }) {
   );
 }
 
-const STEPS = [
-  'Изучаем цель и уровень подготовки',
-  'Подбираем упражнения под твой инвентарь',
-  'Распределяем нагрузку по дням',
-  'Считаем подходы, повторы и отдых',
-  'Проверяем, чтобы всё сходилось',
-];
-
 /** Экран ожидания, пока сервер составляет план (обычно 20–60 секунд). */
 function Generating() {
   const [step, setStep] = useState(0);
+  const STEPS = L.workouts.genSteps;
 
   useEffect(() => {
     const timer = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 7000);
     return () => clearInterval(timer);
-  }, []);
+  }, [STEPS.length]);
 
   return (
     <main className="screen wk-generating">
       <div className="wk-orb" aria-hidden="true">
         <Icon name="dumbbell" size={40} />
       </div>
-      <h2>Составляем твой план</h2>
-      <p className="muted">Обычно это занимает до минуты. Не закрывай приложение.</p>
+      <h2>{L.workouts.generating}</h2>
+      <p className="muted">{L.workouts.generatingHint}</p>
       <ul className="wk-gen-steps">
         {STEPS.map((s, i) => (
           <li

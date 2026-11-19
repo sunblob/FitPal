@@ -5,6 +5,8 @@ import {
   viewport,
   retrieveRawInitData,
 } from '@telegram-apps/sdk-react';
+import { languageFromTelegram } from '@fitpal/shared';
+import { setLanguage } from '../i18n';
 
 let rawInitData: string | undefined;
 
@@ -24,6 +26,8 @@ export function initTelegram() {
   try {
     init();
     rawInitData = retrieveRawInitData();
+    // Пока профиль не загрузился, показываем интерфейс на языке Telegram
+    setLanguage(languageFromTelegram(telegramLanguageCode(rawInitData)));
   } catch {
     console.warn('Not running inside Telegram');
     followSystemTheme();
@@ -62,6 +66,15 @@ function applyTheme(theme: Theme) {
   if (miniApp.setHeaderColor.isAvailable()) miniApp.setHeaderColor(bg);
   if (miniApp.setBackgroundColor.isAvailable()) miniApp.setBackgroundColor(bg);
   if (miniApp.setBottomBarColor.isAvailable()) miniApp.setBottomBarColor(bar);
+}
+
+function telegramLanguageCode(initData: string | undefined): string | undefined {
+  try {
+    const user = new URLSearchParams(initData ?? '').get('user');
+    return user ? (JSON.parse(user) as { language_code?: string }).language_code : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function getInitData(): string | undefined {

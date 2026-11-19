@@ -1,4 +1,5 @@
 import type { Profile } from '@fitpal/shared';
+import { locale } from '../i18n';
 import type { Me } from './api';
 
 /** Профиль из ответа /me, если он заполнен. */
@@ -20,9 +21,10 @@ export function profileFromMe(me: Me): Profile | null {
 
 export const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-export function formatDateRu(date: string): string {
+/** «12 марта» / «12 March» на языке интерфейса, год только если не текущий. */
+export function formatDate(date: string): string {
   const d = new Date(`${date}T12:00:00`);
-  return d.toLocaleDateString('ru-RU', {
+  return d.toLocaleDateString(locale(), {
     day: 'numeric',
     month: 'long',
     ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),

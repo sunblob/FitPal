@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { scaleNutrients, sumNutrients, type RecognizedFood } from '@fitpal/shared';
+import { L } from '../i18n';
 import { Icon } from './Icon';
 
 /** Редактируемый список блюд от ИИ (по фото или по описанию): название, граммы, итого. */
@@ -39,13 +40,17 @@ export function RecognizedItems(props: {
                 value={item.name}
                 onChange={(e) => update(i, { name: e.target.value })}
               />
-              <button className="icon-btn small-btn" onClick={() => remove(i)} aria-label="Убрать">
+              <button
+                className="icon-btn small-btn"
+                onClick={() => remove(i)}
+                aria-label={L.ai.removeItem}
+              >
                 <Icon name="close" size={16} />
               </button>
             </div>
             <div className="inline">
               <label>
-                Граммы
+                {L.ai.grams}
                 <input
                   inputMode="decimal"
                   value={item.grams || ''}
@@ -54,9 +59,7 @@ export function RecognizedItems(props: {
               </label>
               <div className="recognized-kcal">
                 <div className="big">{n.kcal}</div>
-                <div className="muted small">
-                  Б {n.protein} · Ж {n.fat} · У {n.carbs}
-                </div>
+                <div className="muted small">{L.common.pfc(n.protein, n.fat, n.carbs)}</div>
               </div>
             </div>
           </div>
@@ -66,11 +69,13 @@ export function RecognizedItems(props: {
         <>
           {props.note && <p className="muted">{props.note}</p>}
           <div className="recognized-total">
-            <span className="muted">Итого</span>
-            <b>{total.kcal} ккал</b>
+            <span className="muted">{L.ai.total}</span>
+            <b>
+              {total.kcal} {L.common.kcal}
+            </b>
           </div>
           <button className="primary" disabled={!valid || saving} onClick={confirm}>
-            {saving ? 'Записываю…' : 'Добавить в дневник'}
+            {saving ? L.ai.saving : L.ai.addToDiary}
           </button>
         </>
       )}
@@ -80,7 +85,5 @@ export function RecognizedItems(props: {
 
 /** Текст ошибки запроса к ИИ для пользователя. */
 export function aiErrorText(e: unknown, fallback: string): string {
-  return e instanceof Error && e.message.startsWith('API 429')
-    ? 'Слишком много запросов к ИИ за час, попробуй позже.'
-    : fallback;
+  return e instanceof Error && e.message.startsWith('API 429') ? L.common.aiRateLimited : fallback;
 }

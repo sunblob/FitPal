@@ -22,7 +22,7 @@ export class WorkoutsController {
 
   @Get(':id')
   get(@CurrentUser() user: User, @Param() { id }: UuidParamDto) {
-    return this.workouts.get(user.id, id);
+    return this.workouts.get(user.id, id, user.language);
   }
 
   @Delete(':id')

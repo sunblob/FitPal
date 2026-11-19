@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_STEPS_GOAL, addDays, type StepLogDto } from '@fitpal/shared';
+import { fmtNumber, L, locale } from '../../i18n';
 import { api } from '../../lib/api';
 
 const DAYS = 14;
@@ -28,15 +29,15 @@ export function StepsWeek({ today }: { today: string }) {
   return (
     <section className="card steps-week">
       <div className="steps-week-head">
-        <div className="card-title">Шаги за 2 недели</div>
+        <div className="card-title">{L.steps.twoWeeks}</div>
         {logged.length > 0 && (
-          <span className="muted small">в среднем {avg.toLocaleString('ru-RU')}</span>
+          <span className="muted small">{L.steps.average(fmtNumber(avg))}</span>
         )}
       </div>
       {logs && logged.length === 0 ? (
-        <p className="muted small">Пока нет записей. Шаги вносятся на экране дневника.</p>
+        <p className="muted small">{L.steps.noData}</p>
       ) : (
-        <div className="steps-bars" role="img" aria-label="Шаги по дням">
+        <div className="steps-bars" role="img" aria-label={L.steps.barsAria}>
           <div
             className="steps-goal-line"
             style={{ bottom: `${(DEFAULT_STEPS_GOAL / max) * 100}%` }}
@@ -54,12 +55,12 @@ export function StepsWeek({ today }: { today: string }) {
       {logged.length > 0 && (
         <div className="steps-axis muted small">
           <span>
-            {new Date(`${days[0]!.date}T12:00:00`).toLocaleDateString('ru-RU', {
+            {new Date(`${days[0]!.date}T12:00:00`).toLocaleDateString(locale(), {
               day: 'numeric',
               month: 'short',
             })}
           </span>
-          <span>сегодня</span>
+          <span>{L.steps.today}</span>
         </div>
       )}
     </section>

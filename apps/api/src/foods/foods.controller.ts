@@ -13,16 +13,16 @@ export class FoodsController {
 
   @Get()
   search(@CurrentUser() user: User, @Query() query: FoodSearchQueryDto) {
-    return this.foods.search(user.id, query.q);
+    return this.foods.search(user.id, query.q, user.language);
   }
 
   @Get('barcode/:code')
-  byBarcode(@Param() { code }: BarcodeParamDto) {
-    return this.foods.byBarcode(code);
+  byBarcode(@CurrentUser() user: User, @Param() { code }: BarcodeParamDto) {
+    return this.foods.byBarcode(code, user.language);
   }
 
   @Post()
   create(@CurrentUser() user: User, @Body() body: CreateFoodDto) {
-    return this.foods.create(user.id, body);
+    return this.foods.create(user.id, body, user.language);
   }
 }

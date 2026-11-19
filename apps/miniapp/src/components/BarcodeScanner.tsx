@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { L } from '../i18n';
 import { detectBarcode, isValidBarcode } from '../lib/barcode';
 import { Icon } from './Icon';
 
@@ -24,7 +25,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
 
     async function start() {
       if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError('Камера недоступна в этом окне.');
+        setCameraError(L.scanner.noCameraApi);
         return;
       }
       try {
@@ -33,7 +34,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
           audio: false,
         });
       } catch {
-        setCameraError('Нет доступа к камере.');
+        setCameraError(L.scanner.noCameraAccess);
         return;
       }
       const video = videoRef.current;
@@ -73,7 +74,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
     const code = await detectBarcode(bitmap).catch(() => null);
     bitmap.close();
     if (code && isValidBarcode(code)) props.onDetected(code);
-    else setPhotoError('Не получилось прочитать штрихкод. Попробуй ещё раз или введи цифры.');
+    else setPhotoError(L.scanner.readFailed);
   }
 
   return (
@@ -84,12 +85,14 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
           <div className="scanner-frame" />
         </div>
       ) : (
-        <p className="muted">{cameraError} Сфотографируй штрихкод или введи цифры.</p>
+        <p className="muted">
+          {cameraError} {L.scanner.fallback}
+        </p>
       )}
 
       <label className="file-button">
         <Icon name="camera" />
-        Сфотографировать штрихкод
+        {L.scanner.photo}
         <input
           type="file"
           accept="image/*"
@@ -102,7 +105,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
       <div className="inline">
         <input
           inputMode="numeric"
-          placeholder="Цифры под штрихкодом"
+          placeholder={L.scanner.digits}
           value={manual}
           onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))}
         />
@@ -111,7 +114,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
           disabled={!isValidBarcode(manual)}
           onClick={() => props.onDetected(manual)}
         >
-          Найти
+          {L.scanner.find}
         </button>
       </div>
     </div>

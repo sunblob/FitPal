@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { L, locale } from '../../i18n';
 import type { WeightLogDto } from '../../lib/api';
 
 const W = 340;
@@ -10,7 +11,7 @@ export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | n
   const { logs, targetKg } = props;
   const gradientId = useId();
   if (logs.length === 0) {
-    return <p className="muted chart-empty">Пока нет взвешиваний за этот период.</p>;
+    return <p className="muted chart-empty">{L.weight.chartEmpty}</p>;
   }
 
   const values = logs.map((l) => l.weightKg).concat(targetKg ? [targetKg] : []);
@@ -36,10 +37,10 @@ export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | n
       : null;
   const ticks = [min, (min + max) / 2, max];
   const label = (d: string) =>
-    new Date(`${d}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    new Date(`${d}T12:00:00`).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label="График веса">
+    <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label={L.weight.chartAria}>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" className="area-start" />
@@ -64,7 +65,7 @@ export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | n
             className="target"
           />
           <text x={W - PAD.right} y={y(targetKg) - 4} textAnchor="end" className="axis">
-            цель {targetKg}
+            {L.weight.target(targetKg)}
           </text>
         </g>
       )}

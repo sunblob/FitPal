@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  MEAL_LABELS_RU,
+  MEAL_LABELS,
   MEAL_TYPES,
   addDays,
   todayIn,
@@ -13,9 +13,10 @@ import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { StepsCard } from '../../components/StepsCard';
 import { WorkoutToday } from '../../components/WorkoutToday';
+import { getLanguage, L, locale } from '../../i18n';
 import { useWorkoutLog } from '../../lib/workoutLog';
 import { api, del, type Me } from '../../lib/api';
-import { formatDateRu } from '../../lib/profile';
+import { formatDate } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
 
 const MEAL_ICONS: Record<MealType, string> = {
@@ -26,7 +27,7 @@ const MEAL_ICONS: Record<MealType, string> = {
 };
 
 const weekday = (date: string) => {
-  const name = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'long' });
+  const name = new Date(`${date}T12:00:00`).toLocaleDateString(locale(), { weekday: 'long' });
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
 
@@ -63,6 +64,7 @@ export function DiaryPage({ me }: { me: Me }) {
     load();
   }
 
+  const mealLabels = MEAL_LABELS[getLanguage()];
   const target = day?.target;
   const eaten = day?.totals.kcal ?? 0;
 
@@ -72,21 +74,25 @@ export function DiaryPage({ me }: { me: Me }) {
         <button
           className="icon-btn"
           onClick={() => setDate(addDays(date, -1))}
-          aria-label="Предыдущий день"
+          aria-label={L.diary.prevDay}
         >
           <Icon name="back" />
         </button>
         <div className="date-title">
           <h1>
-            {date === today ? 'Сегодня' : date === addDays(today, -1) ? 'Вчера' : weekday(date)}
+            {date === today
+              ? L.diary.today
+              : date === addDays(today, -1)
+                ? L.diary.yesterday
+                : weekday(date)}
           </h1>
-          <div className="muted small">{formatDateRu(date)}</div>
+          <div className="muted small">{formatDate(date)}</div>
         </div>
         <button
           className="icon-btn"
           disabled={date >= today}
           onClick={() => setDate(addDays(date, 1))}
-          aria-label="Следующий день"
+          aria-label={L.diary.nextDay}
         >
           <Icon name="forward" />
         </button>
@@ -96,21 +102,26 @@ export function DiaryPage({ me }: { me: Me }) {
         <div className="hero-top">
           <CalorieRing eaten={eaten} target={target?.kcal ?? null} />
           <div className="hero-stats">
-            <Stat icon="target" label="Норма" value={target?.kcal} />
-            <Stat icon="flame" label="Съедено" value={Math.round(eaten)} />
+            <Stat icon="target" label={L.diary.norm} value={target?.kcal} />
+            <Stat icon="flame" label={L.diary.eaten} value={Math.round(eaten)} />
           </div>
         </div>
         <div className="macros">
           <MacroBar
             kind="protein"
-            label="Белки"
+            label={L.common.protein}
             value={day?.totals.protein ?? 0}
             target={target?.protein}
           />
-          <MacroBar kind="fat" label="Жиры" value={day?.totals.fat ?? 0} target={target?.fat} />
+          <MacroBar
+            kind="fat"
+            label={L.common.fat}
+            value={day?.totals.fat ?? 0}
+            target={target?.fat}
+          />
           <MacroBar
             kind="carbs"
-            label="Углеводы"
+            label={L.common.carbs}
             value={day?.totals.carbs ?? 0}
             target={target?.carbs}
           />
@@ -120,7 +131,7 @@ export function DiaryPage({ me }: { me: Me }) {
       <StepsCard date={date} weightKg={me.weightKg} />
 
       {workout.logs && workout.logs.length > 0 && (
-        <WorkoutToday logs={workout.logs} title="Тренировка" />
+        <WorkoutToday logs={workout.logs} title={L.diary.workout} />
       )}
 
       {error && <pre className="error">{error}</pre>}
@@ -135,15 +146,17 @@ export function DiaryPage({ me }: { me: Me }) {
                 {MEAL_ICONS[meal]}
               </span>
               <div className="meal-title">
-                <strong>{MEAL_LABELS_RU[meal]}</strong>
+                <strong>{mealLabels[meal]}</strong>
                 <span className="muted small">
-                  {entries.length > 0 ? `${Math.round(m?.totals.kcal ?? 0)} ккал` : 'Пока пусто'}
+                  {entries.length > 0
+                    ? `${Math.round(m?.totals.kcal ?? 0)} ${L.common.kcal}`
+                    : L.diary.empty}
                 </span>
               </div>
               <button
                 className="add-btn"
                 onClick={() => setAddingTo(meal)}
-                aria-label={`Добавить в ${MEAL_LABELS_RU[meal].toLowerCase()}`}
+                aria-label={L.diary.addTo(mealLabels[meal])}
               >
                 <Icon name="plus" size={20} />
               </button>
@@ -156,15 +169,19 @@ export function DiaryPage({ me }: { me: Me }) {
                     <div className="entry-main">
                       <div className="entry-name">{e.name}</div>
                       <div className="muted small">
-                        {e.grams} г · Б {Math.round(e.nutrients.protein)} · Ж{' '}
-                        {Math.round(e.nutrients.fat)} · У {Math.round(e.nutrients.carbs)}
+                        {e.grams} {L.common.g} ·{' '}
+                        {L.common.pfc(
+                          Math.round(e.nutrients.protein),
+                          Math.round(e.nutrients.fat),
+                          Math.round(e.nutrients.carbs),
+                        )}
                       </div>
                     </div>
                     <span className="entry-kcal">{Math.round(e.nutrients.kcal)}</span>
                     <button
                       className="icon-btn small-btn"
                       onClick={() => remove(e.id)}
-                      aria-label="Удалить"
+                      aria-label={L.common.remove}
                     >
                       <Icon name="close" size={16} />
                     </button>

@@ -3,6 +3,7 @@ import {
   nutritionLabelSchema,
   photoRecognitionSchema,
   type ImageMediaType,
+  type Language,
   type NutritionLabel,
   type PhotoRecognition,
   type RecognizedFood,
@@ -15,6 +16,7 @@ import {
   TEXT_RECOGNITION_SYSTEM,
   recognitionPrompt,
   textRecognitionPrompt,
+  withLanguage,
 } from './recognition.prompt.js';
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
@@ -69,12 +71,14 @@ export class RecognitionService {
 
   constructor(private readonly claude: ClaudeService) {}
 
-  private consume(userId: string) {
+  private consume(userId: string, lang: Language) {
     const now = Date.now();
     const recent = (this.usage.get(userId) ?? []).filter((t) => now - t < HOUR_MS);
     if (recent.length >= HOURLY_LIMIT) {
       throw new HttpException(
-        'Слишком много запросов к ИИ за час, попробуй позже',
+        lang === 'ru'
+          ? 'Слишком много запросов к ИИ за час, попробуй позже'
+          : 'Too many AI requests this hour, try again later',
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -89,11 +93,12 @@ export class RecognitionService {
   async readLabel(
     userId: string,
     image: { mediaType: ImageMediaType; data: string },
+    lang: Language,
   ): Promise<NutritionLabel> {
-    this.consume(userId);
+    this.consume(userId, lang);
     const raw = await this.claude.parse({
       schema: nutritionLabelSchema,
-      system: LABEL_SYSTEM,
+      system: withLanguage(LABEL_SYSTEM, lang),
       prompt: LABEL_PROMPT,
       images: [image],
       effort: 'low',
@@ -105,12 +110,13 @@ export class RecognitionService {
   async recognize(
     userId: string,
     image: { mediaType: ImageMediaType; data: string },
+    lang: Language,
     hint?: string,
   ): Promise<PhotoRecognition> {
-    this.consume(userId);
+    this.consume(userId, lang);
     const raw = await this.claude.parse({
       schema: photoRecognitionSchema,
-      system: RECOGNITION_SYSTEM,
+      system: withLanguage(RECOGNITION_SYSTEM, lang),
       prompt: recognitionPrompt(hint),
       images: [image],
       effort: 'medium',
@@ -119,11 +125,11 @@ export class RecognitionService {
     return sanitizeRecognition(raw);
   }
 
-  async recognizeText(userId: string, text: string): Promise<PhotoRecognition> {
-    this.consume(userId);
+  async recognizeText(userId: string, text: string, lang: Language): Promise<PhotoRecognition> {
+    this.consume(userId, lang);
     const raw = await this.claude.parse({
       schema: photoRecognitionSchema,
-      system: TEXT_RECOGNITION_SYSTEM,
+      system: withLanguage(TEXT_RECOGNITION_SYSTEM, lang),
       prompt: textRecognitionPrompt(text),
       effort: 'low',
       maxTokens: 4000,
