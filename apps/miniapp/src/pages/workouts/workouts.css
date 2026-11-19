@@ -364,3 +364,46 @@ label.wk-row {
   font-size: 15px;
   color: var(--text);
 }
+.wk-dose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wk-dose .wk-facts {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0;
+}
+.wk-dose-notes {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+.wk-steps-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.wk-steps-skeleton span {
+  height: 14px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  animation: wk-pulse 1.2s ease-in-out infinite;
+}
+.wk-steps-skeleton span:nth-child(2) {
+  width: 85%;
+}
+.wk-steps-skeleton span:nth-child(3) {
+  width: 60%;
+}
+@keyframes wk-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wk-steps-skeleton span {
+    animation: none;
+  }
+}
