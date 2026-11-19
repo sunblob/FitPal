@@ -36,6 +36,11 @@ export class DiaryController {
     return this.diary.add(user.id, body, user.language);
   }
 
+  @Get('week')
+  week(@CurrentUser() user: User, @Query() query: DiaryDayQueryDto) {
+    return this.diary.week(user, query.date);
+  }
+
   @Get('streak')
   streak(@CurrentUser() user: User) {
     return this.diary.streak(user);

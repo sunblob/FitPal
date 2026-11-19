@@ -208,6 +208,15 @@ const ru = {
     chartAria: 'График веса',
     target: (kg: number) => `цель ${kg}`,
   },
+  week: {
+    title: 'Питание за неделю',
+    average: (kcal: number) => `в среднем ${kcal} ккал`,
+    noData: 'За последние 7 дней записей нет.',
+    barsAria: 'Калории по дням за неделю',
+    macros: 'БЖУ по калориям',
+    targetShares: (p: number, f: number, c: number) => `цель ${p} / ${f} / ${c} %`,
+    daysOver: (n: number, total: number) => `Выше нормы ${n} из ${total} дн.`,
+  },
   water: {
     title: 'Вода',
     amount: (l: string, goal: string) => `${l} из ${goal} л`,
@@ -491,6 +500,15 @@ const en: Dict = {
     chartEmpty: 'No weigh-ins for this period yet.',
     chartAria: 'Weight chart',
     target: (kg) => `goal ${kg}`,
+  },
+  week: {
+    title: 'Nutrition this week',
+    average: (kcal) => `${kcal} kcal on average`,
+    noData: 'Nothing logged in the last 7 days.',
+    barsAria: 'Calories per day this week',
+    macros: 'Macros by calories',
+    targetShares: (p, f, c) => `target ${p} / ${f} / ${c} %`,
+    daysOver: (n, total) => `Over target on ${n} of ${total} days`,
   },
   water: {
     title: 'Water',
