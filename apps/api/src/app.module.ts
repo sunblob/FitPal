@@ -4,6 +4,7 @@ import { DbModule } from './db/db.module.js';
 import { UsersModule } from './users/users.module.js';
 import { BotModule } from './bot/bot.module.js';
 import { WeightModule } from './weight/weight.module.js';
+import { StepsModule } from './steps/steps.module.js';
 import { FoodsModule } from './foods/foods.module.js';
 import { DiaryModule } from './diary/diary.module.js';
 import { RecognitionModule } from './recognition/recognition.module.js';
@@ -18,6 +19,7 @@ import { HealthController } from './health/health.controller.js';
     DbModule,
     UsersModule,
     WeightModule,
+    StepsModule,
     FoodsModule,
     DiaryModule,
     RecognitionModule,

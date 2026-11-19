@@ -1211,3 +1211,100 @@ button.ai-button {
 textarea {
   resize: vertical;
 }
+
+/* --- Шаги --- */
+.steps-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.steps-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.steps-icon {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.steps-title {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+button.steps-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+button.steps-value .icon-svg {
+  color: var(--text-2);
+}
+
+.steps-fill.done,
+.steps-bar.done {
+  background: var(--accent);
+}
+
+.steps-week {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.steps-week-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.steps-bars {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 4px;
+  height: 96px;
+  align-items: end;
+}
+
+.steps-col {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.steps-bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px;
+  background: var(--accent-vivid);
+  opacity: 0.85;
+}
+
+.steps-goal-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dashed var(--text-2);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.steps-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -4px;
+}

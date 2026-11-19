@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { GOAL_LABELS_RU, addDays, todayIn, weightPlan } from '@fitpal/shared';
 import { api, post, type Me, type WeightLogDto } from '../../lib/api';
 import { formatDateRu, profileFromMe } from '../../lib/profile';
+import { StepsWeek } from './StepsWeek';
 import { WeightChart } from './WeightChart';
 
 const RANGES = [
@@ -139,6 +140,8 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
         </div>
         <WeightChart logs={logs} targetKg={me.goal !== 'maintain' ? me.targetWeightKg : null} />
       </section>
+
+      <StepsWeek today={today} />
 
       {plan && me.goal && (
         <section className="card plan-card">
