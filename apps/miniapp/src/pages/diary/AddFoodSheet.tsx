@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   MEAL_LABELS_RU,
   nutrientsSchema,
@@ -10,7 +10,18 @@ import {
 } from '@fitpal/shared';
 import { api, post } from '../../lib/api';
 
-type Mode = { kind: 'search' } | { kind: 'portion'; food: FoodDto } | { kind: 'manual' };
+// Сканер тянет wasm на ~1 МБ, грузим его только когда он нужен
+const BarcodeScanner = lazy(() =>
+  import('../../components/BarcodeScanner').then((m) => ({ default: m.BarcodeScanner })),
+);
+
+type Mode =
+  | { kind: 'search' }
+  | { kind: 'scan' }
+  | { kind: 'lookup'; code: string }
+  | { kind: 'notFound'; code: string }
+  | { kind: 'portion'; food: FoodDto }
+  | { kind: 'manual' };
 
 interface Props {
   meal: MealType;
@@ -39,6 +50,21 @@ export function AddFoodSheet(props: Props) {
     }
   }
 
+  async function lookup(code: string) {
+    setMode({ kind: 'lookup', code });
+    setError(null);
+    try {
+      const food = await api<FoodDto>(`/foods/barcode/${code}`);
+      setMode({ kind: 'portion', food });
+    } catch (e) {
+      if ((e as Error).message.startsWith('API 404')) setMode({ kind: 'notFound', code });
+      else {
+        setError((e as Error).message);
+        setMode({ kind: 'scan' });
+      }
+    }
+  }
+
   return (
     <div className="sheet">
       <div className="sheet-head">
@@ -56,6 +82,7 @@ export function AddFoodSheet(props: Props) {
         <FoodSearch
           onPick={(food) => setMode({ kind: 'portion', food })}
           onManual={() => setMode({ kind: 'manual' })}
+          onScan={() => setMode({ kind: 'scan' })}
         />
       )}
       {mode.kind === 'portion' && (
@@ -71,20 +98,54 @@ export function AddFoodSheet(props: Props) {
           }
         />
       )}
+      {mode.kind === 'scan' && (
+        <Suspense fallback={<p className="muted">Запускаю камеру…</p>}>
+          <BarcodeScanner onDetected={lookup} />
+        </Suspense>
+      )}
+      {mode.kind === 'lookup' && <p className="muted">Ищу продукт {mode.code}…</p>}
+      {mode.kind === 'notFound' && (
+        <div className="sheet-body">
+          <p>
+            Продукта со штрихкодом <strong>{mode.code}</strong> нет в базе.
+          </p>
+          <button className="primary" onClick={() => setMode({ kind: 'manual' })}>
+            Ввести КБЖУ вручную
+          </button>
+          <button className="ghost add" onClick={() => setMode({ kind: 'scan' })}>
+            Сканировать ещё раз
+          </button>
+        </div>
+      )}
       {mode.kind === 'manual' && <ManualFood onAdd={addEntry} />}
     </div>
   );
 }
 
-function FoodSearch(props: { onPick: (f: FoodDto) => void; onManual: () => void }) {
+function FoodSearch(props: {
+  onPick: (f: FoodDto) => void;
+  onManual: () => void;
+  onScan: () => void;
+}) {
   const [q, setQ] = useState('');
   const [items, setItems] = useState<FoodDto[] | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const t = setTimeout(() => {
-      api<FoodDto[]>(`/foods?q=${encodeURIComponent(q.trim())}`).then(setItems, () => setItems([]));
-    }, 250);
-    return () => clearTimeout(t);
+      setLoading(true);
+      api<FoodDto[]>(`/foods?q=${encodeURIComponent(q.trim())}`)
+        .then(
+          (res) => !cancelled && setItems(res),
+          () => !cancelled && setItems([]),
+        )
+        .finally(() => !cancelled && setLoading(false));
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [q]);
 
   return (
@@ -95,10 +156,16 @@ function FoodSearch(props: { onPick: (f: FoodDto) => void; onManual: () => void 
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
-      <button className="ghost add" onClick={props.onManual}>
-        + Ввести вручную
-      </button>
-      {items && items.length === 0 && (
+      <div className="quick-actions">
+        <button className="ghost add" onClick={props.onScan}>
+          Сканировать штрихкод
+        </button>
+        <button className="ghost add" onClick={props.onManual}>
+          + Ввести вручную
+        </button>
+      </div>
+      {loading && <div className="muted small">Ищу в базе продуктов…</div>}
+      {!loading && items && items.length === 0 && (
         <p className="muted">
           {q
             ? 'Ничего не нашлось. Добавь продукт вручную.'
@@ -112,7 +179,7 @@ function FoodSearch(props: { onPick: (f: FoodDto) => void; onManual: () => void 
             {f.name}
             {f.brand && <span className="muted"> · {f.brand}</span>}
           </span>
-          <span className="muted">{Math.round(f.per100g.kcal)} ккал/100 г</span>
+          <span className="muted nowrap">{Math.round(f.per100g.kcal)} ккал/100 г</span>
         </button>
       ))}
     </div>
@@ -128,6 +195,7 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
   return (
     <div className="sheet-body">
       <h2>{props.food.name}</h2>
+      {props.food.brand && <div className="muted">{props.food.brand}</div>}
       <label>
         Вес порции, г
         <input

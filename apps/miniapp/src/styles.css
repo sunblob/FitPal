@@ -357,3 +357,48 @@ h2 {
   fill: var(--hint);
   font-size: 10px;
 }
+
+/* --- Сканер штрихкода --- */
+.quick-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.scanner {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 4 / 3;
+}
+
+.scanner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-frame {
+  position: absolute;
+  inset: 30% 10%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+
+label.file-button {
+  align-items: center;
+  padding: 14px 10px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--button);
+  font-size: 15px;
+}
+
+label.file-button input {
+  display: none;
+}
