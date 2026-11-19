@@ -76,6 +76,16 @@ export const updateDiaryEntrySchema = z
   .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
 export type UpdateDiaryEntry = z.infer<typeof updateDiaryEntrySchema>;
 
+/** Повтор записей из другого дня: весь день или один приём пищи. */
+export const copyDiarySchema = z
+  .object({
+    fromDate: z.iso.date(),
+    toDate: z.iso.date(),
+    meal: mealTypeSchema.optional(),
+  })
+  .refine((v) => v.fromDate !== v.toDate, 'Dates must differ');
+export type CopyDiary = z.infer<typeof copyDiarySchema>;
+
 export const logWeightSchema = z.object({
   weightKg: z.number().min(30).max(300),
   /** Дата в формате YYYY-MM-DD, по умолчанию сегодня. */
@@ -132,6 +142,18 @@ export interface DiaryEntryDto {
   /** Фото и группа продукта, если запись сделана из базы продуктов. */
   imageUrl: string | null;
   category: string | null;
+}
+
+/** Недавно съеденное: продукт из базы или запись без продукта (фото, ИИ). */
+export interface RecentFoodDto {
+  foodId: string | null;
+  name: string;
+  brand: string | null;
+  imageUrl: string | null;
+  category: string | null;
+  per100g: Nutrients;
+  /** Вес последней порции, его предлагаем по умолчанию. */
+  lastGrams: number;
 }
 
 export interface DiaryDayDto {

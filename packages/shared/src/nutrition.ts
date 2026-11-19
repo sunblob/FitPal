@@ -1,4 +1,11 @@
-import type { ActivityLevel, Goal, Nutrients, Profile } from './schemas.js';
+import {
+  MEAL_TYPES,
+  type ActivityLevel,
+  type Goal,
+  type MealType,
+  type Nutrients,
+  type Profile,
+} from './schemas.js';
 
 const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
   sedentary: 1.2,
@@ -70,6 +77,33 @@ export function rescaleNutrients(n: Nutrients, fromGrams: number, toGrams: numbe
     },
     toGrams,
   );
+}
+
+/** Обычная доля дневной нормы на каждый приём пищи. */
+export const MEAL_SHARES: Record<MealType, number> = {
+  breakfast: 0.25,
+  lunch: 0.35,
+  dinner: 0.3,
+  snack: 0.1,
+};
+
+/**
+ * Ориентир калорий на ещё пустые приёмы пищи: обычная доля дневной нормы, но не больше
+ * того, что от нормы осталось. Для заполненных приёмов и когда норма выбрана — null.
+ */
+export function mealBudgets(
+  targetKcal: number,
+  eatenKcal: Record<MealType, number>,
+): Record<MealType, number | null> {
+  const left = targetKcal - MEAL_TYPES.reduce((sum, m) => sum + eatenKcal[m], 0);
+  return Object.fromEntries(
+    MEAL_TYPES.map((m) => [
+      m,
+      left > 0 && eatenKcal[m] <= 0
+        ? Math.min(Math.round(left), Math.round(targetKcal * MEAL_SHARES[m]))
+        : null,
+    ]),
+  ) as Record<MealType, number | null>;
 }
 
 export function sumNutrients(items: Nutrients[]): Nutrients {

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   MEAL_LABELS,
   MEAL_TYPES,
   addDays,
+  mealBudgets,
   todayIn,
   type DiaryDayDto,
   type DiaryEntryDto,
@@ -16,7 +17,7 @@ import { StepsCard } from '../../components/StepsCard';
 import { WorkoutToday } from '../../components/WorkoutToday';
 import { getLanguage, L, locale } from '../../i18n';
 import { useWorkoutLog } from '../../lib/workoutLog';
-import { api, del, type Me } from '../../lib/api';
+import { api, del, post, type Me } from '../../lib/api';
 import { formatDate } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
 import { EditEntrySheet } from './EditEntrySheet';
@@ -54,13 +55,45 @@ export function DiaryPage({ me }: { me: Me }) {
   const [error, setError] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<MealType | null>(null);
   const [editing, setEditing] = useState<DiaryEntryDto | null>(null);
+  /** Предыдущий день: из него предлагаем повторить приём пищи или весь день. */
+  const [prevDay, setPrevDay] = useState<DiaryDayDto | null>(null);
+  const [copying, setCopying] = useState(false);
   const workout = useWorkoutLog(date);
+  const prevDate = addDays(date, -1);
 
   const load = useCallback(() => {
     api<DiaryDayDto>(`/diary?date=${date}`).then(setDay, (e: Error) => setError(e.message));
   }, [date]);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    setPrevDay(null);
+    api<DiaryDayDto>(`/diary?date=${prevDate}`).then(setPrevDay, () => setPrevDay(null));
+  }, [prevDate]);
+
+  async function repeat(meal?: MealType) {
+    setCopying(true);
+    try {
+      await post('/diary/copy', { fromDate: prevDate, toDate: date, meal });
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  // Полоса «осталось N ккал» появляется, когда кольцо с нормой уехало за экран
+  const heroRef = useRef<HTMLElement>(null);
+  const [heroHidden, setHeroHidden] = useState(false);
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setHeroHidden(!e!.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   async function remove(id: string) {
     await del(`/diary/${id}`);
@@ -70,9 +103,47 @@ export function DiaryPage({ me }: { me: Me }) {
   const mealLabels = MEAL_LABELS[getLanguage()];
   const target = day?.target;
   const eaten = day?.totals.kcal ?? 0;
+  const left = target ? Math.round(target.kcal - eaten) : null;
+  // Бюджет на пустые приёмы пищи показываем только для сегодняшнего дня
+  const budgets =
+    day && target && date === today
+      ? mealBudgets(
+          target.kcal,
+          Object.fromEntries(MEAL_TYPES.map((m) => [m, day.meals[m].totals.kcal])) as Record<
+            MealType,
+            number
+          >,
+        )
+      : null;
+  const dayEmpty =
+    day != null &&
+    day.totals.kcal === 0 &&
+    MEAL_TYPES.every((m) => day.meals[m].entries.length === 0);
+  const prevCount = prevDay
+    ? MEAL_TYPES.reduce((n, m) => n + prevDay.meals[m].entries.length, 0)
+    : 0;
+  const isYesterday = date === today;
 
   return (
     <main className="screen">
+      {left != null && (
+        <div className={heroHidden ? 'budget-bar shown' : 'budget-bar'} aria-hidden={!heroHidden}>
+          <div className="budget-bar-row">
+            <span className="muted small">
+              {Math.round(eaten)} / {target!.kcal} {L.common.kcal}
+            </span>
+            <strong className={left < 0 ? 'over-text' : 'budget-left'}>
+              {left < 0 ? L.diary.over(-left) : L.diary.left(left)}
+            </strong>
+          </div>
+          <div className="budget-track">
+            <div
+              className={left < 0 ? 'budget-fill over' : 'budget-fill'}
+              style={{ width: `${Math.min(100, (eaten / target!.kcal) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
       <header className="date-nav">
         <button
           className="icon-btn"
@@ -101,7 +172,7 @@ export function DiaryPage({ me }: { me: Me }) {
         </button>
       </header>
 
-      <section className="card hero">
+      <section className="card hero" ref={heroRef}>
         <div className="hero-top">
           <CalorieRing eaten={eaten} target={target?.kcal ?? null} />
           <div className="hero-stats">
@@ -139,9 +210,27 @@ export function DiaryPage({ me }: { me: Me }) {
 
       {error && <pre className="error">{error}</pre>}
 
+      {dayEmpty && prevCount > 0 && (
+        <button className="card repeat-day" disabled={copying} onClick={() => void repeat()}>
+          <span className="tile-icon tile-ai">
+            <Icon name="repeat" />
+          </span>
+          <span className="repeat-day-text">
+            <strong>{L.diary.repeatDay(isYesterday)}</strong>
+            <span className="muted small">
+              {L.diary.repeatDayHint(prevCount, Math.round(prevDay!.totals.kcal))}
+            </span>
+          </span>
+        </button>
+      )}
+
       {MEAL_TYPES.map((meal) => {
         const m = day?.meals[meal];
         const entries = m?.entries ?? [];
+        const prevMeal = prevDay?.meals[meal];
+        const canRepeat =
+          !dayEmpty && day != null && entries.length === 0 && (prevMeal?.entries.length ?? 0) > 0;
+        const budget = budgets?.[meal];
         return (
           <section key={meal} className="card meal">
             <div className="meal-head">
@@ -153,7 +242,9 @@ export function DiaryPage({ me }: { me: Me }) {
                 <span className="muted small">
                   {entries.length > 0
                     ? `${Math.round(m?.totals.kcal ?? 0)} ${L.common.kcal}`
-                    : L.diary.empty}
+                    : budget
+                      ? L.diary.budget(budget)
+                      : L.diary.empty}
                 </span>
               </div>
               <button
@@ -164,6 +255,12 @@ export function DiaryPage({ me }: { me: Me }) {
                 <Icon name="plus" size={20} />
               </button>
             </div>
+            {canRepeat && (
+              <button className="repeat-meal" disabled={copying} onClick={() => void repeat(meal)}>
+                <Icon name="repeat" size={16} />
+                {L.diary.repeatMeal(isYesterday, Math.round(prevMeal!.totals.kcal))}
+              </button>
+            )}
             {entries.length > 0 && (
               <ul className="entries">
                 {entries.map((e) => (

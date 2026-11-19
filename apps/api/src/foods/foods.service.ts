@@ -5,11 +5,11 @@ import {
   NotFoundException,
   type OnApplicationBootstrap,
 } from '@nestjs/common';
-import { and, desc, eq, isNull, like, or, sql } from 'drizzle-orm';
-import type { CreateFood, FoodDto, Language } from '@fitpal/shared';
+import { and, desc, eq, gte, isNull, like, or, sql } from 'drizzle-orm';
+import type { CreateFood, FoodDto, Language, RecentFoodDto } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
-import { diaryEntries, foods, type Food } from '../db/schema.js';
-import { toFoodDto } from './foods.mapper.js';
+import { diaryEntries, favoriteFoods, foods, type Food } from '../db/schema.js';
+import { localizedFoodName, toFoodDto } from './foods.mapper.js';
 import { seedGenericFoods } from './generic-foods.seed.js';
 import { OpenFoodFactsClient } from './open-food-facts.client.js';
 import type { OffProduct } from './open-food-facts.js';
@@ -20,6 +20,11 @@ const LIMIT = 30;
 const REMOTE_MIN_QUERY = 3;
 /** Если своих результатов меньше, добираем из Open Food Facts (он медленный и нестабильный). */
 const REMOTE_BELOW = 10;
+
+/** За сколько дней смотрим историю для вкладки «Недавние». */
+const RECENT_DAYS = 60;
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
 
@@ -165,6 +170,68 @@ export class FoodsService implements OnApplicationBootstrap {
       .orderBy(desc(uses))
       .limit(LIMIT);
     return rows.map((r) => toFoodDto(r.food, lang));
+  }
+
+  /**
+   * Что пользователь недавно ел, без повторов: продукты из базы и записи без продукта
+   * (распознанные по фото или словами). КБЖУ на 100 г считаем из последней записи.
+   */
+  async recent(userId: string, lang: Language): Promise<RecentFoodDto[]> {
+    const key = sql`coalesce(${diaryEntries.foodId}::text, lower(${diaryEntries.name}))`;
+    const since = new Date(Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000);
+    const rows = await this.db
+      .selectDistinctOn([key], { entry: diaryEntries, food: foods })
+      .from(diaryEntries)
+      .leftJoin(foods, eq(foods.id, diaryEntries.foodId))
+      .where(and(eq(diaryEntries.userId, userId), gte(diaryEntries.eatenAt, since)))
+      .orderBy(key, desc(diaryEntries.eatenAt));
+
+    return rows
+      .sort((a, b) => b.entry.eatenAt.getTime() - a.entry.eatenAt.getTime())
+      .slice(0, LIMIT)
+      .map(({ entry: e, food }) => {
+        const per100 = (v: number) => (e.grams > 0 ? round1((v * 100) / e.grams) : 0);
+        return {
+          foodId: food?.id ?? null,
+          name: food ? localizedFoodName(food, lang) : e.name,
+          brand: food?.brand ?? null,
+          imageUrl: food?.imageUrl ?? null,
+          category: food?.category ?? null,
+          // Как в прошлый раз: КБЖУ из самой записи, даже если продукт в базе потом поменялся
+          per100g: {
+            kcal: per100(e.kcal),
+            protein: per100(e.protein),
+            fat: per100(e.fat),
+            carbs: per100(e.carbs),
+          },
+          lastGrams: e.grams,
+        };
+      });
+  }
+
+  async favorites(userId: string, lang: Language): Promise<FoodDto[]> {
+    const rows = await this.db
+      .select({ food: foods })
+      .from(favoriteFoods)
+      .innerJoin(foods, eq(foods.id, favoriteFoods.foodId))
+      .where(eq(favoriteFoods.userId, userId))
+      .orderBy(desc(favoriteFoods.createdAt));
+    return rows.map((r) => toFoodDto(r.food, lang));
+  }
+
+  async addFavorite(userId: string, foodId: string): Promise<void> {
+    const food = await this.db.query.foods.findFirst({
+      where: and(eq(foods.id, foodId), this.visibleTo(userId)),
+      columns: { id: true },
+    });
+    if (!food) throw new NotFoundException();
+    await this.db.insert(favoriteFoods).values({ userId, foodId }).onConflictDoNothing();
+  }
+
+  async removeFavorite(userId: string, foodId: string): Promise<void> {
+    await this.db
+      .delete(favoriteFoods)
+      .where(and(eq(favoriteFoods.userId, userId), eq(favoriteFoods.foodId, foodId)));
   }
 
   /**

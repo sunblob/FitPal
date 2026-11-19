@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bmr, dailyTarget, rescaleNutrients, scaleNutrients, weightPlan } from './nutrition.js';
+import {
+  bmr,
+  dailyTarget,
+  mealBudgets,
+  rescaleNutrients,
+  scaleNutrients,
+  weightPlan,
+} from './nutrition.js';
 import type { Profile } from './schemas.js';
 
 const profile: Profile = {
@@ -56,4 +63,19 @@ test('weightPlan estimates weeks to target', () => {
   const plan = weightPlan({ ...profile, goal: 'lose', targetWeightKg: 74, weeklyRateKg: 0.5 }, now);
   assert.equal(plan?.weeks, 12);
   assert.equal(plan?.etaDate, '2026-08-24');
+});
+
+test('mealBudgets gives empty meals their usual share of the target', () => {
+  const b = mealBudgets(2000, { breakfast: 500, lunch: 0, dinner: 0, snack: 0 });
+  assert.deepEqual(b, { breakfast: null, lunch: 700, dinner: 600, snack: 200 });
+});
+
+test('mealBudgets never offers more than is left', () => {
+  const b = mealBudgets(2000, { breakfast: 900, lunch: 900, dinner: 0, snack: 0 });
+  assert.deepEqual(b, { breakfast: null, lunch: null, dinner: 200, snack: 200 });
+});
+
+test('mealBudgets gives nothing when the target is reached', () => {
+  const b = mealBudgets(1000, { breakfast: 600, lunch: 500, dinner: 0, snack: 0 });
+  assert.deepEqual(b, { breakfast: null, lunch: null, dinner: null, snack: null });
 });

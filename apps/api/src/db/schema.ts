@@ -8,6 +8,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -122,6 +123,21 @@ export const diaryEntries = pgTable(
     ...timestamps,
   },
   (t) => [index('diary_user_eaten_idx').on(t.userId, t.eatenAt)],
+);
+
+/** Избранные продукты пользователя: показываются отдельной вкладкой в поиске. */
+export const favoriteFoods = pgTable(
+  'favorite_foods',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    foodId: uuid('food_id')
+      .notNull()
+      .references(() => foods.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.foodId] })],
 );
 
 /** Взвешивания: одна запись на день, для графика веса. */

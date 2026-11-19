@@ -5,6 +5,7 @@ import {
   rescaleNutrients,
   scaleNutrients,
   sumNutrients,
+  type CopyDiary,
   type CreateDiaryEntry,
   type DiaryDayDto,
   type DiaryEntryDto,
@@ -110,6 +111,42 @@ export class DiaryService {
       })
       .returning();
     return this.withFood(entry!, lang);
+  }
+
+  /**
+   * Повторяет записи другого дня (весь день или один приём пищи) в выбранный день.
+   * Время суток сохраняется, считается в таймзоне пользователя. КБЖУ копируются как есть.
+   */
+  async copy(user: User, input: CopyDiary): Promise<{ copied: number }> {
+    const tz = user.timezone;
+    const localDate = sql`(${diaryEntries.eatenAt} at time zone ${tz})::date`;
+    const source = await this.db
+      .select()
+      .from(diaryEntries)
+      .where(
+        and(
+          eq(diaryEntries.userId, user.id),
+          sql`${localDate} = ${input.fromDate}::date`,
+          input.meal ? eq(diaryEntries.meal, input.meal) : undefined,
+        ),
+      );
+    if (source.length === 0) return { copied: 0 };
+
+    await this.db.insert(diaryEntries).values(
+      source.map((e) => ({
+        userId: user.id,
+        foodId: e.foodId,
+        name: e.name,
+        meal: e.meal,
+        grams: e.grams,
+        kcal: e.kcal,
+        protein: e.protein,
+        fat: e.fat,
+        carbs: e.carbs,
+        eatenAt: sql`(${input.toDate}::date + (${e.eatenAt.toISOString()}::timestamptz at time zone ${tz})::time) at time zone ${tz}`,
+      })),
+    );
+    return { copied: source.length };
   }
 
   /** Меняет вес, приём пищи или время записи. При смене веса КБЖУ пересчитываются. */
