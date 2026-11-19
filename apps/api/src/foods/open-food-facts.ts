@@ -15,8 +15,31 @@ const num = (v: unknown): number | undefined => {
   const n = typeof v === 'string' ? Number(v) : v;
   return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : undefined;
 };
-const str = (v: unknown): string | undefined =>
-  typeof v === 'string' && v.trim() ? v.trim() : undefined;
+const ENTITIES: Record<string, string> = {
+  quot: '"',
+  amp: '&',
+  apos: "'",
+  lt: '<',
+  gt: '>',
+  nbsp: ' ',
+};
+
+/** OFF отдаёт часть названий с HTML-сущностями: «ООО &quot;Агро&quot;». */
+export function decodeEntities(s: string): string {
+  return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+    if (e[0] === '#') {
+      const code = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1));
+      return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m;
+    }
+    return ENTITIES[e.toLowerCase()] ?? m;
+  });
+}
+
+const str = (v: unknown): string | undefined => {
+  if (typeof v !== 'string') return undefined;
+  const s = decodeEntities(v).trim();
+  return s || undefined;
+};
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /**

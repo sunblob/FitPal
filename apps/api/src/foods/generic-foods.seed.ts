@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull, like, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/db.module.js';
 import { foods } from '../db/schema.js';
+import { decodeEntities } from './open-food-facts.js';
 import { buildSearchText } from './search-text.js';
 
 /** Элемент data/generic-foods/generic-foods.json (собирается скриптом build.mjs рядом). */
@@ -78,6 +79,24 @@ export async function seedGenericFoods(db: Database): Promise<number> {
         .set({ searchText: buildSearchText(r) })
         .where(eq(foods.id, r.id));
     }
+  }
+  // Кэш OFF, сохранённый до расшифровки HTML-сущностей в названиях
+  const broken = await db
+    .select({ id: foods.id, name: foods.name, brand: foods.brand })
+    .from(foods)
+    .where(
+      and(
+        eq(foods.source, 'openfoodfacts'),
+        or(like(foods.name, '%&%;%'), like(foods.brand, '%&%;%')),
+      ),
+    );
+  for (const r of broken) {
+    const name = decodeEntities(r.name);
+    const brand = r.brand && decodeEntities(r.brand);
+    await db
+      .update(foods)
+      .set({ name, brand, searchText: buildSearchText({ name, brand }) })
+      .where(eq(foods.id, r.id));
   }
   return items.length;
 }

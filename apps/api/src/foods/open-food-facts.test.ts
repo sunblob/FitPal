@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOffProduct, preferCountries, type OffProduct } from './open-food-facts.js';
+import {
+  decodeEntities,
+  parseOffProduct,
+  preferCountries,
+  type OffProduct,
+} from './open-food-facts.js';
 
 test('parses product with kcal and prefers Russian name', () => {
   assert.deepEqual(
@@ -72,4 +77,16 @@ test('preferCountries moves Slovak products first and keeps order', () => {
     sorted.map((x) => x.barcode),
     ['2', '4', '1', '3'],
   );
+});
+
+test('decodes HTML entities in name and brand', () => {
+  const p = parseOffProduct({
+    code: '4607072710125',
+    product_name: 'Крупа &quot;Камоліно&quot; &amp; рис',
+    brands: 'ООО &quot;Агро-Альянс&quot;',
+    nutriments: { 'energy-kcal_100g': 330 },
+  });
+  assert.equal(p?.name, 'Крупа "Камоліно" & рис');
+  assert.equal(p?.brand, 'ООО "Агро-Альянс"');
+  assert.equal(decodeEntities('a&#39;b &#x41; &unknown; &amp;'), "a'b A &unknown; &");
 });
