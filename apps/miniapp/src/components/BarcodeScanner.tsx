@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { detectBarcode, isValidBarcode } from '../lib/barcode';
+import { Icon } from './Icon';
 
 const SCAN_INTERVAL_MS = 250;
 
@@ -87,6 +88,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
       )}
 
       <label className="file-button">
+        <Icon name="camera" />
         Сфотографировать штрихкод
         <input
           type="file"
@@ -105,7 +107,7 @@ export function BarcodeScanner(props: { onDetected: (code: string) => void }) {
           onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))}
         />
         <button
-          className="primary"
+          className="primary btn-inline"
           disabled={!isValidBarcode(manual)}
           onClick={() => props.onDetected(manual)}
         >

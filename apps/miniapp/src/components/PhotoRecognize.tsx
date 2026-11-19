@@ -7,6 +7,7 @@ import {
 } from '@fitpal/shared';
 import { post } from '../lib/api';
 import { prepareImage } from '../lib/image';
+import { Icon } from './Icon';
 
 type State =
   | { kind: 'pick' }
@@ -56,6 +57,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
           />
         </label>
         <label className="file-button">
+          <Icon name="camera" />
           Сделать или выбрать фото
           <input type="file" accept="image/*" onChange={(e) => void onFile(e.target.files?.[0])} />
         </label>
@@ -99,14 +101,14 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
         const n = scaleNutrients(item.per100g, item.grams || 0);
         return (
           <div key={i} className="card recognized">
-            <div className="entry">
+            <div className="recognized-head">
               <input
                 className="name-input"
                 value={item.name}
                 onChange={(e) => update(i, { name: e.target.value })}
               />
-              <button className="icon" onClick={() => remove(i)} aria-label="Убрать">
-                ×
+              <button className="icon-btn small-btn" onClick={() => remove(i)} aria-label="Убрать">
+                <Icon name="close" size={16} />
               </button>
             </div>
             <div className="inline">
@@ -131,7 +133,10 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
       {items.length > 0 && (
         <>
           {state.note && <p className="muted">{state.note}</p>}
-          <div className="muted">Итого {total.kcal} ккал</div>
+          <div className="recognized-total">
+            <span className="muted">Итого</span>
+            <b>{total.kcal} ккал</b>
+          </div>
           <button className="primary" disabled={!valid || saving} onClick={confirm}>
             {saving ? 'Записываю…' : 'Добавить в дневник'}
           </button>

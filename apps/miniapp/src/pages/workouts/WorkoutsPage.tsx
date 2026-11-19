@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
+  LEVEL_LABELS_RU,
   MUSCLE_LABELS_RU,
+  WORKOUT_GOAL_LABELS_RU,
   type ExerciseDto,
   type GenerateWorkoutPlan,
   type Muscle,
   type WorkoutPlanDto,
   type WorkoutPlanSummaryDto,
 } from '@fitpal/shared';
+import { Icon } from '../../components/Icon';
 import { api } from '../../lib/api';
 import { ExerciseAnimation } from './ExerciseAnimation';
 import { PlanForm } from './PlanForm';
@@ -15,10 +18,27 @@ import './workouts.css';
 type View =
   | { kind: 'list' }
   | { kind: 'form' }
+  | { kind: 'generating' }
   | { kind: 'plan'; plan: WorkoutPlanDto }
   | { kind: 'exercise'; exercise: ExerciseDto; back: View };
 
 const muscleLabel = (m: string) => MUSCLE_LABELS_RU[m as Muscle] ?? m;
+
+/** Понятный текст ошибки вместо «API 503: {json}». */
+function errorMessage(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  const json = raw.replace(/^API \d+: /, '');
+  try {
+    const body: unknown = JSON.parse(json);
+    if (body && typeof body === 'object' && 'message' in body) {
+      const msg = (body as { message: unknown }).message;
+      if (typeof msg === 'string') return msg;
+    }
+  } catch {
+    // не JSON, показываем как есть
+  }
+  return raw.startsWith('API ') ? 'Что-то пошло не так. Попробуй ещё раз.' : raw;
+}
 
 export function WorkoutsPage() {
   const [view, setView] = useState<View>({ kind: 'list' });
@@ -32,7 +52,7 @@ export function WorkoutsPage() {
     try {
       await fn();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -43,13 +63,23 @@ export function WorkoutsPage() {
       void run(async () => setPlans(await api<WorkoutPlanSummaryDto[]>('/workouts')));
   }, [view.kind]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
   const generate = (params: GenerateWorkoutPlan) =>
     run(async () => {
-      const plan = await api<WorkoutPlanDto>('/workouts/generate', {
-        method: 'POST',
-        body: JSON.stringify(params),
-      });
-      setView({ kind: 'plan', plan });
+      setView({ kind: 'generating' });
+      try {
+        const plan = await api<WorkoutPlanDto>('/workouts/generate', {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+        setView({ kind: 'plan', plan });
+      } catch (e) {
+        setView({ kind: 'form' });
+        throw e;
+      }
     });
 
   const openPlan = (id: string) =>
@@ -76,16 +106,20 @@ export function WorkoutsPage() {
     );
   };
 
-  const errorBox = error && <pre className="error">{error}</pre>;
+  const errorBox = error && <p className="error">{error}</p>;
+
+  if (view.kind === 'generating') return <Generating />;
 
   if (view.kind === 'form') {
     return (
       <>
-        <button className="wk-back" onClick={() => setView({ kind: 'list' })}>
-          ← Назад
-        </button>
+        <div className="wk-topbar">
+          <button className="icon-btn" onClick={() => setView({ kind: 'list' })} aria-label="Назад">
+            <Icon name="back" />
+          </button>
+        </div>
+        {error && <div className="wk-form-error">{errorBox}</div>}
         <PlanForm busy={busy} onSubmit={generate} />
-        {errorBox}
       </>
     );
   }
@@ -94,26 +128,38 @@ export function WorkoutsPage() {
     const ex = view.exercise;
     return (
       <main className="screen">
-        <button className="wk-back" onClick={() => setView(view.back)}>
-          ← Назад
+        <button className="icon-btn" onClick={() => setView(view.back)} aria-label="Назад">
+          <Icon name="back" />
         </button>
-        <h1>{ex.name}</h1>
-        {ex.name !== ex.nameEn && <div className="muted">{ex.nameEn}</div>}
-        <ExerciseAnimation images={ex.images} alt={ex.name} />
-        <div className="muted">
-          {ex.primaryMuscles.map(muscleLabel).join(', ')}
-          {ex.secondaryMuscles.length > 0 &&
-            ` · также ${ex.secondaryMuscles.map(muscleLabel).join(', ')}`}
+        <div>
+          <h1 className="wk-title">{ex.name}</h1>
+          {ex.name !== ex.nameEn && <div className="muted small">{ex.nameEn}</div>}
         </div>
-        <section className="card">
-          <ol className="wk-steps">
-            {ex.instructions.map((step, i) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-        </section>
+        <ExerciseAnimation images={ex.images} alt={ex.name} />
+        <div className="chips">
+          {ex.primaryMuscles.map((m) => (
+            <span key={m} className="tag tag-accent">
+              {muscleLabel(m)}
+            </span>
+          ))}
+          {ex.secondaryMuscles.map((m) => (
+            <span key={m} className="tag">
+              {muscleLabel(m)}
+            </span>
+          ))}
+        </div>
+        {ex.instructions.length > 0 && (
+          <section className="card">
+            <div className="card-title">Как выполнять</div>
+            <ol className="wk-steps">
+              {ex.instructions.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          </section>
+        )}
         <a className="wk-yt" href={ex.youtubeUrl} target="_blank" rel="noreferrer">
-          ▶ Видео на YouTube
+          ▶ Видео с техникой
         </a>
       </main>
     );
@@ -123,36 +169,72 @@ export function WorkoutsPage() {
     const { plan } = view;
     return (
       <main className="screen">
-        <button className="wk-back" onClick={() => setView({ kind: 'list' })}>
-          ← Мои планы
+        <button
+          className="icon-btn"
+          onClick={() => setView({ kind: 'list' })}
+          aria-label="К списку планов"
+        >
+          <Icon name="back" />
         </button>
-        <h1>{plan.title}</h1>
-        <p className="muted">{plan.summary}</p>
+
+        <section className="wk-plan-hero">
+          <div className="wk-plan-hero-icon">
+            <Icon name="dumbbell" size={26} />
+          </div>
+          <h1 className="wk-title">{plan.title}</h1>
+          {plan.summary && <p className="wk-plan-summary">{plan.summary}</p>}
+          <div className="wk-facts">
+            <Fact value={String(plan.params.daysPerWeek)} label="трен. в неделю" />
+            <Fact value={String(plan.params.sessionMinutes)} label="минут" />
+            <Fact value={WORKOUT_GOAL_LABELS_RU[plan.params.goal]} label="цель" />
+            <Fact value={LEVEL_LABELS_RU[plan.params.level]} label="уровень" />
+          </div>
+        </section>
+
         {plan.days.map((day, di) => (
-          <section className="card" key={di}>
-            <h2 className="wk-day">{day.name}</h2>
-            <div className="muted">{day.focus}</div>
-            {day.exercises.map((item, ei) => (
-              <button className="wk-ex" key={ei} onClick={() => openExercise(item.exercise, view)}>
-                <ExerciseAnimation
-                  images={item.exercise.images}
-                  alt={item.exercise.name}
-                  size="small"
-                />
-                <span className="wk-ex-text">
-                  <b>{item.exercise.name}</b>
-                  <span>
-                    {item.sets} × {item.reps} · отдых {item.restSec} с
+          <section className="card wk-day-card" key={di}>
+            <div className="wk-day-head">
+              <span className="wk-day-num">{di + 1}</span>
+              <div className="wk-day-text">
+                <h2 className="wk-day">{day.name}</h2>
+                {day.focus && <div className="muted small">{day.focus}</div>}
+              </div>
+              <span className="muted small nowrap">{day.exercises.length} упр.</span>
+            </div>
+            <div className="wk-ex-list">
+              {day.exercises.map((item, ei) => (
+                <button
+                  className="wk-ex"
+                  key={ei}
+                  onClick={() => openExercise(item.exercise, view)}
+                >
+                  <ExerciseAnimation
+                    images={item.exercise.images}
+                    alt={item.exercise.name}
+                    size="small"
+                  />
+                  <span className="wk-ex-text">
+                    <b>{item.exercise.name}</b>
+                    <span className="wk-ex-meta">
+                      <span className="tag tag-accent">
+                        {item.sets} × {item.reps}
+                      </span>
+                      <span className="tag">отдых {item.restSec} с</span>
+                    </span>
+                    {item.notes && <span className="muted small">{item.notes}</span>}
                   </span>
-                  {item.notes && <span className="muted">{item.notes}</span>}
-                </span>
-              </button>
-            ))}
+                  <span className="wk-chevron" aria-hidden="true">
+                    <Icon name="forward" size={18} />
+                  </span>
+                </button>
+              ))}
+            </div>
           </section>
         ))}
+
         {plan.tips.length > 0 && (
-          <section className="card">
-            <div className="muted">Советы</div>
+          <section className="card wk-tips">
+            <div className="card-title">Советы</div>
             <ul className="wk-steps">
               {plan.tips.map((t, i) => (
                 <li key={i}>{t}</li>
@@ -171,19 +253,101 @@ export function WorkoutsPage() {
   return (
     <main className="screen">
       <h1>Тренировки</h1>
-      <button onClick={() => setView({ kind: 'form' })}>Составить план с Claude</button>
-      {plans?.length === 0 && (
-        <p className="muted">Планов пока нет. Выбери цель и мышцы, остальное сделает Claude.</p>
-      )}
-      {plans?.map((p) => (
-        <button className="card wk-plan" key={p.id} onClick={() => openPlan(p.id)} disabled={busy}>
-          <b>{p.title}</b>
-          <span className="muted">
-            {p.daysCount} трен. в неделю · {new Date(p.createdAt).toLocaleDateString('ru-RU')}
-          </span>
+      <section className="card wk-cta">
+        <div className="wk-cta-icon">
+          <Icon name="dumbbell" size={28} />
+        </div>
+        <div className="card-title">Персональный план</div>
+        <p className="muted">
+          Выбери цель, мышцы и инвентарь. План с подходами, отдыхом и техникой будет готов за
+          минуту.
+        </p>
+        <button className="primary" onClick={() => setView({ kind: 'form' })}>
+          Составить план
         </button>
-      ))}
+      </section>
+
+      {plans && plans.length > 0 && (
+        <>
+          <div className="section-label">Мои планы</div>
+          <div className="list">
+            {plans.map((p) => (
+              <button
+                className="food-row wk-plan"
+                key={p.id}
+                onClick={() => openPlan(p.id)}
+                disabled={busy}
+              >
+                <span className="wk-plan-icon">
+                  <Icon name="dumbbell" size={20} />
+                </span>
+                <span className="food-name">
+                  {p.title}
+                  <span className="muted small">
+                    {p.daysCount} трен. в неделю ·{' '}
+                    {new Date(p.createdAt).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </span>
+                </span>
+                <span className="wk-chevron" aria-hidden="true">
+                  <Icon name="forward" size={18} />
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {errorBox}
+    </main>
+  );
+}
+
+function Fact(props: { value: string; label: string }) {
+  return (
+    <div className="wk-fact">
+      <b>{props.value}</b>
+      <span>{props.label}</span>
+    </div>
+  );
+}
+
+const STEPS = [
+  'Изучаем цель и уровень подготовки',
+  'Подбираем упражнения под твой инвентарь',
+  'Распределяем нагрузку по дням',
+  'Считаем подходы, повторы и отдых',
+  'Проверяем, чтобы всё сходилось',
+];
+
+/** Экран ожидания, пока сервер составляет план (обычно 20–60 секунд). */
+function Generating() {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 7000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <main className="screen wk-generating">
+      <div className="wk-orb" aria-hidden="true">
+        <Icon name="dumbbell" size={40} />
+      </div>
+      <h2>Составляем твой план</h2>
+      <p className="muted">Обычно это занимает до минуты. Не закрывай приложение.</p>
+      <ul className="wk-gen-steps">
+        {STEPS.map((s, i) => (
+          <li
+            key={s}
+            className={i < step ? 'wk-gen-done' : i === step ? 'wk-gen-active' : undefined}
+          >
+            <span className="wk-gen-mark" aria-hidden="true" />
+            {s}
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }

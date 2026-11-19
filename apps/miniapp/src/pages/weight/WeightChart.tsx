@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { WeightLogDto } from '../../lib/api';
 
 const W = 340;
@@ -7,7 +8,10 @@ const PAD = { top: 12, right: 12, bottom: 22, left: 34 };
 /** Простой линейный график веса с линией цели. */
 export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | null }) {
   const { logs, targetKg } = props;
-  if (logs.length === 0) return <p className="muted">Пока нет взвешиваний.</p>;
+  const gradientId = useId();
+  if (logs.length === 0) {
+    return <p className="muted chart-empty">Пока нет взвешиваний за этот период.</p>;
+  }
 
   const values = logs.map((l) => l.weightKg).concat(targetKg ? [targetKg] : []);
   const min = Math.floor(Math.min(...values) - 1);
@@ -25,12 +29,23 @@ export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | n
   const path = logs
     .map((l, i) => `${i ? 'L' : 'M'}${x(l.date).toFixed(1)},${y(l.weightKg).toFixed(1)}`)
     .join(' ');
+  const bottom = H - PAD.bottom;
+  const area =
+    logs.length > 1
+      ? `${path} L${x(logs[logs.length - 1]!.date).toFixed(1)},${bottom} L${x(logs[0]!.date).toFixed(1)},${bottom} Z`
+      : null;
   const ticks = [min, (min + max) / 2, max];
   const label = (d: string) =>
     new Date(`${d}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label="График веса">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="area-start" />
+          <stop offset="100%" className="area-end" />
+        </linearGradient>
+      </defs>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="grid" />
@@ -53,9 +68,16 @@ export function WeightChart(props: { logs: WeightLogDto[]; targetKg?: number | n
           </text>
         </g>
       )}
+      {area && <path d={area} fill={`url(#${gradientId})`} />}
       <path d={path} className="line" />
-      {logs.map((l) => (
-        <circle key={l.id} cx={x(l.date)} cy={y(l.weightKg)} r={3} className="dot" />
+      {logs.map((l, i) => (
+        <circle
+          key={l.id}
+          cx={x(l.date)}
+          cy={y(l.weightKg)}
+          r={i === logs.length - 1 ? 5 : 3}
+          className={i === logs.length - 1 ? 'dot dot-last' : 'dot'}
+        />
       ))}
       <text x={PAD.left} y={H - 6} className="axis">
         {label(logs[0]!.date)}

@@ -58,24 +58,68 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
         )
       : null;
 
+  const current = last?.weightKg ?? me.weightKg;
+  const toGo =
+    me.goal !== 'maintain' && me.targetWeightKg && current
+      ? Math.round(Math.abs(current - me.targetWeightKg) * 10) / 10
+      : null;
+
   return (
     <main className="screen">
       <h1>Вес</h1>
 
+      <section className="card hero weight-hero">
+        <div className="weight-now">
+          <div className="muted small">Текущий вес</div>
+          <div className="display">
+            {current ?? '—'}
+            <span className="unit"> кг</span>
+          </div>
+          {logs.length > 1 && (
+            <span className={change <= 0 ? 'pill pill-good' : 'pill'}>
+              {change > 0 ? '+' : change < 0 ? '−' : ''}
+              {Math.abs(change)} кг за период
+            </span>
+          )}
+        </div>
+        {me.goal && (
+          <div className="weight-goal">
+            <div className="muted small">Цель</div>
+            <div className="stat-value">
+              {me.goal !== 'maintain' && me.targetWeightKg
+                ? `${me.targetWeightKg} кг`
+                : GOAL_LABELS_RU[me.goal]}
+            </div>
+            {toGo != null && <div className="muted small">ещё {toGo} кг</div>}
+          </div>
+        )}
+        {progress != null && me.goal !== 'maintain' && (
+          <div className="goal-progress">
+            <div className="bar bar-thick">
+              <div className="bar-fill" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="goal-progress-labels muted small">
+              <span>{first?.weightKg} кг</span>
+              <span>{Math.round(progress)}% пути</span>
+              <span>{me.targetWeightKg} кг</span>
+            </div>
+          </div>
+        )}
+      </section>
+
       <section className="card form">
-        <div className="muted">
-          {loggedToday
-            ? `Сегодня: ${last.weightKg} кг. Можно обновить.`
-            : 'Взвесься и запиши вес за сегодня'}
+        <div className="card-title">
+          {loggedToday ? 'Обновить вес за сегодня' : 'Записать вес за сегодня'}
         </div>
         <div className="inline">
           <input
             inputMode="decimal"
-            placeholder={String(me.weightKg ?? 'кг')}
+            placeholder={loggedToday ? String(last.weightKg) : String(me.weightKg ?? 'кг')}
             value={value}
             onChange={(e) => setValue(e.target.value)}
+            aria-label="Вес, кг"
           />
-          <button className="primary" disabled={!valid || busy} onClick={save}>
+          <button className="primary btn-inline" disabled={!valid || busy} onClick={save}>
             Записать
           </button>
         </div>
@@ -94,33 +138,17 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
           ))}
         </div>
         <WeightChart logs={logs} targetKg={me.goal !== 'maintain' ? me.targetWeightKg : null} />
-        {logs.length > 1 && (
-          <div className="muted">
-            За период: {change > 0 ? '+' : ''}
-            {change} кг
-          </div>
-        )}
       </section>
 
-      {me.goal && (
-        <section className="card">
-          <div className="muted">Цель</div>
-          <div className="big">
-            {GOAL_LABELS_RU[me.goal]}
-            {me.goal !== 'maintain' && me.targetWeightKg ? ` до ${me.targetWeightKg} кг` : ''}
+      {plan && me.goal && (
+        <section className="card plan-card">
+          <div className="card-title">
+            {GOAL_LABELS_RU[me.goal]} до {plan.targetWeightKg} кг
           </div>
-          {plan && (
-            <p className="plan-line">
-              Темп {plan.weeklyRateKg} кг/нед. Осталось{' '}
-              {Math.abs(Math.round((plan.startWeightKg - plan.targetWeightKg) * 10) / 10)} кг,
-              примерно {plan.weeks} нед., к {formatDateRu(plan.etaDate)}
-            </p>
-          )}
-          {progress != null && me.goal !== 'maintain' && (
-            <div className="bar">
-              <div className="bar-fill" style={{ width: `${progress}%` }} />
-            </div>
-          )}
+          <p className="muted">
+            Темп {plan.weeklyRateKg} кг в неделю, примерно {plan.weeks} нед. Цель к{' '}
+            {formatDateRu(plan.etaDate)}
+          </p>
         </section>
       )}
     </main>
