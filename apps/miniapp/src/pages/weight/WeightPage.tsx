@@ -4,6 +4,7 @@ import { getLanguage, L } from '../../i18n';
 import { api, post, type Me, type WeightLogDto } from '../../lib/api';
 import { formatDate, profileFromMe } from '../../lib/profile';
 import { StepsWeek } from './StepsWeek';
+import { WeekCard } from './WeekCard';
 import { WeightChart } from './WeightChart';
 
 const RANGES = [30, 90, 365];
@@ -140,6 +141,8 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
         </div>
         <WeightChart logs={logs} targetKg={me.goal !== 'maintain' ? me.targetWeightKg : null} />
       </section>
+
+      <WeekCard today={today} />
 
       <StepsWeek today={today} />
 

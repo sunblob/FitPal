@@ -1539,6 +1539,88 @@ button.steps-value .icon-svg {
   margin-top: -4px;
 }
 
+/* --- Питание за неделю --- */
+.week-bars {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  height: 110px;
+  align-items: end;
+}
+
+.week-bar {
+  border-radius: 6px;
+}
+
+.week-bar.over {
+  background: var(--danger);
+}
+
+.week-axis {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: -4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.week-today {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.week-macros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.week-macros-head,
+.macro-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.macro-split {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+}
+
+.macro-split span {
+  flex-basis: 0;
+  border-radius: 999px;
+}
+
+.split-protein {
+  background: var(--protein);
+}
+
+.split-fat {
+  background: var(--fat);
+}
+
+.split-carbs {
+  background: var(--carbs);
+}
+
+.legend-protein {
+  color: var(--protein-text);
+}
+
+.legend-fat {
+  color: var(--fat-text);
+}
+
+.legend-carbs {
+  color: var(--carbs-text);
+}
+
 /* --- Миниатюры продуктов --- */
 .food-thumb {
   display: grid;

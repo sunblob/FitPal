@@ -6,6 +6,7 @@ import {
   scaleNutrients,
   streakDto,
   todayIn,
+  addDays,
   sumNutrients,
   type CloseDay,
   type CopyDiary,
@@ -15,6 +16,7 @@ import {
   type Language,
   type MealType,
   type StreakDto,
+  type WeekSummaryDto,
   type UpdateDiaryEntry,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
@@ -121,6 +123,58 @@ export class DiaryService {
       })
       .returning();
     return this.withFood(entry!, lang);
+  }
+
+  /** Итоги КБЖУ за 7 дней, заканчивая днём date (по таймзоне пользователя). */
+  async week(user: User, date: string): Promise<WeekSummaryDto> {
+    const from = addDays(date, -6);
+    const localDate = sql<string>`to_char(${diaryEntries.eatenAt} at time zone ${user.timezone}, 'YYYY-MM-DD')`;
+    const rows = await this.db
+      .select({
+        date: localDate,
+        kcal: sql<number>`sum(${diaryEntries.kcal})::float`,
+        protein: sql<number>`sum(${diaryEntries.protein})::float`,
+        fat: sql<number>`sum(${diaryEntries.fat})::float`,
+        carbs: sql<number>`sum(${diaryEntries.carbs})::float`,
+      })
+      .from(diaryEntries)
+      .where(
+        and(
+          eq(diaryEntries.userId, user.id),
+          sql`(${diaryEntries.eatenAt} at time zone ${user.timezone})::date between ${from}::date and ${date}::date`,
+        ),
+      )
+      // По номеру колонки: таймзона передаётся параметром, и одно и то же выражение
+      // в select и group by для Postgres выглядит разным
+      .groupBy(sql`1`);
+    const byDate = new Map(rows.map((r) => [r.date, r]));
+    const r1 = (n: number) => Math.round(n * 10) / 10;
+    return {
+      days: Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(from, i);
+        const r = byDate.get(d);
+        return {
+          date: d,
+          nutrients: r
+            ? {
+                kcal: Math.round(r.kcal),
+                protein: r1(r.protein),
+                fat: r1(r.fat),
+                carbs: r1(r.carbs),
+              }
+            : { kcal: 0, protein: 0, fat: 0, carbs: 0 },
+        };
+      }),
+      target:
+        user.targetKcal != null
+          ? {
+              kcal: user.targetKcal,
+              protein: user.targetProtein ?? 0,
+              fat: user.targetFat ?? 0,
+              carbs: user.targetCarbs ?? 0,
+            }
+          : null,
+    };
   }
 
   async setClosed(userId: string, input: CloseDay): Promise<void> {
