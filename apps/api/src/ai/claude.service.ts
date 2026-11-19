@@ -63,10 +63,14 @@ export class ClaudeService {
 
     if (response.stop_reason === 'refusal') {
       this.logger.warn(`Claude refused: ${JSON.stringify(response.stop_details)}`);
-      throw new ServiceUnavailableException('Claude отказался выполнить запрос');
+      throw new ServiceUnavailableException(
+        'Не получилось выполнить запрос, попробуй изменить пожелания',
+      );
     }
     if (response.stop_reason === 'max_tokens' || response.parsed_output == null) {
-      throw new ServiceUnavailableException('Claude вернул неполный ответ, попробуй ещё раз');
+      throw new ServiceUnavailableException(
+        'Не получилось получить полный ответ, попробуй ещё раз',
+      );
     }
     return response.parsed_output as z.infer<S>;
   }
