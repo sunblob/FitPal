@@ -765,7 +765,7 @@ label.check input {
 
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
@@ -1139,4 +1139,56 @@ label.file-button input {
 
 .tab:active:not(:disabled) {
   transform: none;
+}
+
+/* --- Ввод еды словами через ИИ --- */
+.tile-ai {
+  background: var(--protein-soft, var(--accent-soft));
+  color: var(--protein-text, var(--accent-text));
+}
+
+.ai-suggest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.ai-suggest > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ai-suggest .muted {
+  font-weight: 400;
+}
+
+button.ai-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ai-query {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+textarea {
+  resize: vertical;
 }
