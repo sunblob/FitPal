@@ -29,6 +29,13 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // На телефоне вкладки прокручиваются: держим активную в поле зрения
+  useEffect(() => {
+    document
+      .querySelector('.topbar nav a.active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [route.tab, session]);
+
   const onError = useCallback((e: unknown) => {
     if (e instanceof UnauthorizedError) setSession(null);
   }, []);
