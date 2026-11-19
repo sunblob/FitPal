@@ -30,6 +30,20 @@ export const envSchema = z.object({
   ANTHROPIC_API_KEY: unsetIfEmpty(z.string().optional()),
   /** Модель Claude для генерации планов и переводов. */
   ANTHROPIC_MODEL: unsetIfEmpty(z.string().default('claude-opus-5-5')),
+  /** Telegram ID через запятую, кому открыта админка. Пусто — админка выключена. */
+  ADMIN_TELEGRAM_IDS: unsetIfEmpty(
+    z
+      .string()
+      .default('')
+      .transform((s) =>
+        s
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+          .map(Number)
+          .filter(Number.isSafeInteger),
+      ),
+  ),
   /** Откуда брать картинки упражнений (free-exercise-db через jsDelivr). */
   EXERCISE_MEDIA_BASE_URL: unsetIfEmpty(
     z

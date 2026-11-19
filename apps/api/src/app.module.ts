@@ -11,6 +11,7 @@ import { RecognitionModule } from './recognition/recognition.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { ExercisesModule } from './exercises/exercises.module.js';
 import { WorkoutsModule } from './workouts/workouts.module.js';
+import { AdminModule } from './admin/admin.module.js';
 import { HealthController } from './health/health.controller.js';
 
 @Module({
@@ -27,6 +28,7 @@ import { HealthController } from './health/health.controller.js';
     ExercisesModule,
     WorkoutsModule,
     BotModule,
+    AdminModule,
   ],
   controllers: [HealthController],
 })

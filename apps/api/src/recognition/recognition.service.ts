@@ -103,6 +103,7 @@ export class RecognitionService {
       images: [image],
       effort: 'low',
       maxTokens: 2000,
+      track: { kind: 'label', userId },
     });
     return sanitizeLabel(raw);
   }
@@ -121,6 +122,7 @@ export class RecognitionService {
       images: [image],
       effort: 'medium',
       maxTokens: 8000,
+      track: { kind: 'photo', userId },
     });
     return sanitizeRecognition(raw);
   }
@@ -133,6 +135,7 @@ export class RecognitionService {
       prompt: textRecognitionPrompt(text),
       effort: 'low',
       maxTokens: 4000,
+      track: { kind: 'text', userId },
     });
     return sanitizeRecognition(raw);
   }

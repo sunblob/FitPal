@@ -1,0 +1,426 @@
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --line: #e3e6ea;
+  --text: #101418;
+  --text-2: #5e6672;
+  --accent: #087f5b;
+  --accent-soft: rgba(18, 184, 134, 0.14);
+  --on-accent: #ffffff;
+  --danger: #d93036;
+  --radius: 12px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0f12;
+    --surface: #171a1f;
+    --surface-2: #22262d;
+    --line: #2a2f37;
+    --text: #e8eaed;
+    --text-2: #9aa3ae;
+    --accent: #20c997;
+    --accent-soft: rgba(32, 201, 151, 0.16);
+    --on-accent: #06281d;
+    --danger: #ff6b6b;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    14px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+h1 {
+  font-size: 20px;
+}
+h2 {
+  font-size: 15px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+}
+button.link.danger {
+  color: var(--danger);
+}
+
+.muted {
+  color: var(--text-2);
+}
+.small {
+  font-size: 12px;
+}
+.mono {
+  font-family: ui-monospace, Menlo, monospace;
+}
+.error {
+  color: var(--danger);
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Вход ---- */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  width: min(400px, 100%);
+  display: grid;
+  gap: 12px;
+  text-align: center;
+}
+.login-widget {
+  min-height: 48px;
+  display: flex;
+  justify-content: center;
+}
+.dev-login {
+  text-align: left;
+  display: grid;
+  gap: 8px;
+}
+.dev-login textarea {
+  width: 100%;
+  margin: 8px 0;
+}
+
+/* ---- Каркас ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex-wrap: wrap;
+}
+.topbar nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.topbar nav a {
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--text-2);
+}
+.topbar nav a:hover {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+.topbar nav a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.who {
+  display: flex;
+  gap: 12px;
+  color: var(--text-2);
+}
+main {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ---- Обзор ---- */
+.dashboard {
+  display: grid;
+  gap: 16px;
+}
+.section-title {
+  color: var(--text-2);
+  font-weight: 500;
+  margin-top: 4px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.tile,
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.tile-label {
+  color: var(--text-2);
+}
+.tile-value {
+  font-size: 28px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+.tile-hint {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.card {
+  display: grid;
+  gap: 12px;
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.seg {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 2px;
+  flex-wrap: wrap;
+}
+.seg button {
+  border: none;
+  background: none;
+  padding: 4px 10px;
+  color: var(--text-2);
+}
+.seg button.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 180px;
+}
+.bar-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+.bar {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  min-height: 1px;
+}
+.bar-num {
+  font-size: 10px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.bars-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+table.mini {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.mini td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---- Таблицы ---- */
+.resource {
+  display: grid;
+  gap: 12px;
+}
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.toolbar input[type='search'] {
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+}
+.chip {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table-wrap th,
+.table-wrap td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-wrap th {
+  color: var(--text-2);
+  font-weight: 500;
+  background: var(--surface-2);
+  position: sticky;
+  top: 0;
+}
+.table-wrap th.num,
+.table-wrap td.num {
+  text-align: right;
+}
+.table-wrap tbody tr:hover {
+  background: var(--surface-2);
+}
+.row-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.empty {
+  text-align: center;
+  padding: 24px;
+}
+.pager {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.pager .muted {
+  margin-right: auto;
+}
+
+/* ---- Диалог ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 10;
+}
+.dialog {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 24px;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.form-grid label {
+  display: grid;
+  gap: 4px;
+}
+.form-grid label span {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.form-grid .wide {
+  grid-column: 1 / -1;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
