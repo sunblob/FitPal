@@ -73,11 +73,11 @@ export function ProfilePage(props: {
     }
   }
 
-  async function changeReminder(value: string) {
+  async function changeNotifications(
+    input: Partial<Pick<Me, 'dailyReminder' | 'weeklySummary' | 'reminderHour'>>,
+  ) {
     try {
-      props.onMeChanged(
-        await put<Me>('/me/reminders', { reminderHour: value === '' ? null : Number(value) }),
-      );
+      props.onMeChanged(await put<Me>('/me/notifications', input));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -126,33 +126,47 @@ export function ProfilePage(props: {
 
       {!props.onboarding && (
         <>
-          <div className="section-label">{L.profile.reminders}</div>
+          <div className="section-label">{L.profile.notifications}</div>
           <section className="card form">
-            <select
-              aria-label={L.profile.reminders}
-              value={props.me.reminderHour ?? ''}
-              onChange={(e) => void changeReminder(e.target.value)}
-            >
-              <option value="">{L.profile.remindersOff}</option>
-              {REMINDER_HOURS.map((h) => (
-                <option key={h} value={h}>
-                  {L.profile.at(h)}
-                </option>
-              ))}
-            </select>
-            <p className="muted small">{L.profile.remindersHint}</p>
+            <Toggle
+              label={L.profile.dailyReminder}
+              hint={L.profile.dailyReminderHint}
+              checked={props.me.dailyReminder}
+              onChange={(dailyReminder) => void changeNotifications({ dailyReminder })}
+            />
+            <Toggle
+              label={L.profile.weeklySummary}
+              hint={L.profile.weeklySummaryHint}
+              checked={props.me.weeklySummary}
+              onChange={(weeklySummary) => void changeNotifications({ weeklySummary })}
+            />
+            {(props.me.dailyReminder || props.me.weeklySummary) && (
+              <label>
+                {L.profile.notificationTime}
+                <select
+                  value={props.me.reminderHour}
+                  onChange={(e) =>
+                    void changeNotifications({ reminderHour: Number(e.target.value) })
+                  }
+                >
+                  {REMINDER_HOURS.map((h) => (
+                    <option key={h} value={h}>
+                      {`${h}:00`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </section>
 
+          <div className="section-label">{L.profile.target}</div>
           <section className="card form">
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={props.me.addStepsKcal}
-                onChange={(e) => void changeStepsKcal(e.target.checked)}
-              />
-              {L.profile.stepsKcal}
-            </label>
-            <p className="muted small">{L.profile.stepsKcalHint}</p>
+            <Toggle
+              label={L.profile.stepsKcal}
+              hint={L.profile.stepsKcalHint}
+              checked={props.me.addStepsKcal}
+              onChange={(v) => void changeStepsKcal(v)}
+            />
           </section>
         </>
       )}
@@ -287,5 +301,28 @@ export function ProfilePage(props: {
         {saving ? L.common.saving : L.common.save}
       </button>
     </main>
+  );
+}
+
+function Toggle(props: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="toggle-row">
+      <span className="toggle-text">
+        <span>{props.label}</span>
+        <span className="muted small">{props.hint}</span>
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        className="switch"
+        checked={props.checked}
+        onChange={(e) => props.onChange(e.target.checked)}
+      />
+    </label>
   );
 }

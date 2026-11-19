@@ -39,8 +39,12 @@ export interface Me {
   targetWeightKg: number | null;
   weeklyRateKg: number | null;
   timezone: string;
-  /** Час напоминания в боте, null — выключено. */
-  reminderHour: number | null;
+  /** Напоминание, если за день ничего не записано. */
+  dailyReminder: boolean;
+  /** Итоги недели по воскресеньям. */
+  weeklySummary: boolean;
+  /** Час уведомлений бота по местному времени. */
+  reminderHour: number;
   /** Прибавлять к норме калории за шаги. */
   addStepsKcal: boolean;
   targetKcal: number | null;

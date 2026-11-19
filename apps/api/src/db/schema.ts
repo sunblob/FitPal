@@ -67,8 +67,12 @@ export const users = pgTable('users', {
   timezone: text('timezone').notNull().default('Europe/Moscow'),
   /** Последний запрос из Mini App или сообщение боту, для статистики активности. */
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
-  /** Час вечернего напоминания в боте по местному времени, null — выключено. */
-  reminderHour: integer('reminder_hour').default(20),
+  /** Напоминание, если за день ничего не записано. */
+  dailyReminder: boolean('daily_reminder').notNull().default(true),
+  /** Итоги недели по воскресеньям. */
+  weeklySummary: boolean('weekly_summary').notNull().default(true),
+  /** Час уведомлений бота по местному времени. */
+  reminderHour: integer('reminder_hour').notNull().default(20),
   /** Местная дата последнего напоминания, чтобы не слать дважды за день. */
   lastReminderOn: date('last_reminder_on', { mode: 'string' }),
   /** Местная дата последнего воскресного итога недели. */
