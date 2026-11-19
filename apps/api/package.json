@@ -11,9 +11,11 @@
     "test": "node --test dist/**/*.test.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "exercises:import": "node dist/exercises/import.cli.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
     "@fitpal/shared": "workspace:*",
     "@nestjs/common": "^12.0.0",
     "@nestjs/config": "^12.1.1",

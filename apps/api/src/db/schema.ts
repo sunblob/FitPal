@@ -4,6 +4,7 @@ import {
   uniqueIndex,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   real,
@@ -11,6 +12,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { GenerateWorkoutPlan, WorkoutPlanBody } from '@fitpal/shared';
 
 export const sexEnum = pgEnum('sex', ['male', 'female']);
 export const activityEnum = pgEnum('activity_level', [
@@ -110,7 +112,50 @@ export const weightLogs = pgTable(
   (t) => [uniqueIndex('weight_logs_user_date_idx').on(t.userId, t.date)],
 );
 
+/** Каталог упражнений (импорт из free-exercise-db, id — slug оттуда). */
+export const exercises = pgTable(
+  'exercises',
+  {
+    id: text('id').primaryKey(),
+    nameEn: text('name_en').notNull(),
+    nameRu: text('name_ru'),
+    force: text('force'),
+    level: text('level'),
+    mechanic: text('mechanic'),
+    equipment: text('equipment'),
+    category: text('category'),
+    primaryMuscles: text('primary_muscles').array().notNull(),
+    secondaryMuscles: text('secondary_muscles').array().notNull(),
+    instructionsEn: jsonb('instructions_en').$type<string[]>().notNull(),
+    instructionsRu: jsonb('instructions_ru').$type<string[]>(),
+    /** Относительные пути картинок в репозитории free-exercise-db. */
+    images: text('images').array().notNull(),
+    ...timestamps,
+  },
+  (t) => [index('exercises_primary_muscles_idx').using('gin', t.primaryMuscles)],
+);
+
+/** Планы тренировок, сгенерированные Claude. */
+export const workoutPlans = pgTable(
+  'workout_plans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    /** Параметры запроса (GenerateWorkoutPlan). */
+    params: jsonb('params').$type<GenerateWorkoutPlan>().notNull(),
+    /** План со ссылками на exercises.id (WorkoutPlanBody). */
+    plan: jsonb('plan').$type<WorkoutPlanBody>().notNull(),
+    ...timestamps,
+  },
+  (t) => [index('workout_plans_user_idx').on(t.userId, t.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Food = typeof foods.$inferSelect;
 export type DiaryEntry = typeof diaryEntries.$inferSelect;
 export type WeightLog = typeof weightLogs.$inferSelect;
+export type Exercise = typeof exercises.$inferSelect;
+export type WorkoutPlan = typeof workoutPlans.$inferSelect;
