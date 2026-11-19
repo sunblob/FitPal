@@ -10,6 +10,13 @@ export const envSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
   MINIAPP_URL: z.string().url().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  /** Модель Claude для генерации планов и переводов. */
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
+  /** Откуда брать картинки упражнений (free-exercise-db через jsDelivr). */
+  EXERCISE_MEDIA_BASE_URL: z
+    .string()
+    .url()
+    .default('https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/'),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

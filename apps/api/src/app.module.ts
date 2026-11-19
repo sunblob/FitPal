@@ -4,10 +4,22 @@ import { DbModule } from './db/db.module.js';
 import { UsersModule } from './users/users.module.js';
 import { BotModule } from './bot/bot.module.js';
 import { WeightModule } from './weight/weight.module.js';
+import { AiModule } from './ai/ai.module.js';
+import { ExercisesModule } from './exercises/exercises.module.js';
+import { WorkoutsModule } from './workouts/workouts.module.js';
 import { HealthController } from './health/health.controller.js';
 
 @Module({
-  imports: [ConfigModule, DbModule, UsersModule, WeightModule, BotModule],
+  imports: [
+    ConfigModule,
+    DbModule,
+    UsersModule,
+    WeightModule,
+    AiModule,
+    ExercisesModule,
+    WorkoutsModule,
+    BotModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule {}
