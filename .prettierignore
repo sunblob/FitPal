@@ -1,3 +1,4 @@
 dist
 pnpm-lock.yaml
 apps/api/drizzle
+apps/api/data/generic-foods/generic-foods.json
