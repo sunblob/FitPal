@@ -7,7 +7,9 @@ import {
   type FoodDto,
   type MealType,
   type Nutrients,
+  type RecognizedFood,
 } from '@fitpal/shared';
+import { PhotoRecognize } from '../../components/PhotoRecognize';
 import { api, post } from '../../lib/api';
 
 // Сканер тянет wasm на ~1 МБ, грузим его только когда он нужен
@@ -21,7 +23,8 @@ type Mode =
   | { kind: 'lookup'; code: string }
   | { kind: 'notFound'; code: string }
   | { kind: 'portion'; food: FoodDto }
-  | { kind: 'manual' };
+  | { kind: 'manual' }
+  | { kind: 'photo' };
 
 interface Props {
   meal: MealType;
@@ -44,6 +47,24 @@ export function AddFoodSheet(props: Props) {
         // Для прошлых дней ставим полдень, чтобы запись точно попала в нужную дату
         eatenAt: props.isToday ? undefined : new Date(`${props.date}T12:00:00`).toISOString(),
       });
+      props.onAdded();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function addRecognized(items: RecognizedFood[]) {
+    setError(null);
+    try {
+      for (const item of items) {
+        await post('/diary', {
+          name: item.name,
+          grams: item.grams,
+          per100g: item.per100g,
+          meal: props.meal,
+          eatenAt: props.isToday ? undefined : new Date(`${props.date}T12:00:00`).toISOString(),
+        });
+      }
       props.onAdded();
     } catch (e) {
       setError((e as Error).message);
@@ -83,6 +104,7 @@ export function AddFoodSheet(props: Props) {
           onPick={(food) => setMode({ kind: 'portion', food })}
           onManual={() => setMode({ kind: 'manual' })}
           onScan={() => setMode({ kind: 'scan' })}
+          onPhoto={() => setMode({ kind: 'photo' })}
         />
       )}
       {mode.kind === 'portion' && (
@@ -118,6 +140,7 @@ export function AddFoodSheet(props: Props) {
         </div>
       )}
       {mode.kind === 'manual' && <ManualFood onAdd={addEntry} />}
+      {mode.kind === 'photo' && <PhotoRecognize onConfirm={addRecognized} />}
     </div>
   );
 }
@@ -126,6 +149,7 @@ function FoodSearch(props: {
   onPick: (f: FoodDto) => void;
   onManual: () => void;
   onScan: () => void;
+  onPhoto: () => void;
 }) {
   const [q, setQ] = useState('');
   const [items, setItems] = useState<FoodDto[] | null>(null);
@@ -157,11 +181,14 @@ function FoodSearch(props: {
         onChange={(e) => setQ(e.target.value)}
       />
       <div className="quick-actions">
+        <button className="ghost add" onClick={props.onPhoto}>
+          По фото
+        </button>
         <button className="ghost add" onClick={props.onScan}>
-          Сканировать штрихкод
+          Штрихкод
         </button>
         <button className="ghost add" onClick={props.onManual}>
-          + Ввести вручную
+          Вручную
         </button>
       </div>
       {loading && <div className="muted small">Ищу в базе продуктов…</div>}

@@ -7,5 +7,6 @@ import { DiaryService } from './diary.service.js';
   imports: [UsersModule],
   controllers: [DiaryController],
   providers: [DiaryService],
+  exports: [DiaryService],
 })
 export class DiaryModule {}

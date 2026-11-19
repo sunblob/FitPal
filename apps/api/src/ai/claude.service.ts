@@ -6,6 +6,12 @@ import { Env } from '../config/env.js';
 
 type Effort = 'low' | 'medium' | 'high';
 
+export interface ClaudeImage {
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp';
+  /** base64 без префикса data: */
+  data: string;
+}
+
 /** Тонкая обёртка над Anthropic SDK: один запрос, ответ строго по Zod-схеме. */
 @Injectable()
 export class ClaudeService {
@@ -24,6 +30,8 @@ export class ClaudeService {
     schema: S;
     system: string;
     prompt: string;
+    /** Картинки идут в сообщение перед текстом запроса. */
+    images?: ClaudeImage[];
     effort?: Effort;
     maxTokens?: number;
   }): Promise<z.infer<S>> {
@@ -36,7 +44,20 @@ export class ClaudeService {
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       system: opts.system,
-      messages: [{ role: 'user', content: opts.prompt }],
+      messages: [
+        {
+          role: 'user',
+          content: opts.images?.length
+            ? [
+                ...opts.images.map((img) => ({
+                  type: 'image' as const,
+                  source: { type: 'base64' as const, media_type: img.mediaType, data: img.data },
+                })),
+                { type: 'text' as const, text: opts.prompt },
+              ]
+            : opts.prompt,
+        },
+      ],
       output_config: { effort: opts.effort ?? 'medium', format: betaZodOutputFormat(opts.schema) },
     });
 

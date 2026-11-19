@@ -144,3 +144,37 @@ export const barcodeSchema = z.string().regex(/^\d{8,14}$/, 'Invalid barcode');
 
 export const barcodeParamSchema = z.object({ code: barcodeSchema });
 export type BarcodeParam = z.infer<typeof barcodeParamSchema>;
+
+/** Одно блюдо, распознанное на фото. КБЖУ на 100 г, вес порции оценён моделью. */
+export const recognizedFoodSchema = z.object({
+  name: z.string(),
+  grams: z.number(),
+  per100g: nutrientsSchema,
+});
+export type RecognizedFood = z.infer<typeof recognizedFoodSchema>;
+
+export const photoRecognitionSchema = z.object({
+  items: z.array(recognizedFoodSchema),
+  /** Пояснение, если еды на фото нет или оценка ненадёжна. */
+  note: z.string().nullable(),
+});
+export type PhotoRecognition = z.infer<typeof photoRecognitionSchema>;
+
+export const imageMediaTypeSchema = z.enum(['image/jpeg', 'image/png', 'image/webp']);
+export type ImageMediaType = z.infer<typeof imageMediaTypeSchema>;
+
+/** Максимальный размер фото в base64 (~5 МБ исходника). */
+export const MAX_IMAGE_BASE64_LENGTH = 7_000_000;
+
+export const recognizePhotoSchema = z.object({
+  mediaType: imageMediaTypeSchema,
+  /** Картинка в base64 без префикса data:. */
+  data: z
+    .string()
+    .min(100)
+    .max(MAX_IMAGE_BASE64_LENGTH)
+    .regex(/^[A-Za-z0-9+/]+=*$/, 'Invalid base64'),
+  /** Необязательная подсказка пользователя: «овсянка на воде, 300 г». */
+  hint: z.string().trim().max(300).optional(),
+});
+export type RecognizePhoto = z.infer<typeof recognizePhotoSchema>;
