@@ -43,6 +43,7 @@ export class WorkoutsService {
       system: planSystem(user.language),
       prompt: buildPlanPrompt(params, user, catalog),
       effort: 'medium',
+      track: { kind: 'workout_plan', userId: user.id },
     });
 
     const plan = this.sanitize(body, new Set(catalog.map((e) => e.id)));

@@ -107,6 +107,7 @@ export class ExercisesService {
       const { items } = await this.claude.parse({
         schema: nameTranslationSchema,
         system: TRANSLATE_SYSTEM,
+        track: { kind: 'translation' },
         effort: 'low',
         prompt:
           'Переведи названия упражнений на русский. Верни каждый id без изменений.\n\n' +
@@ -173,6 +174,7 @@ export class ExercisesService {
     const { items } = await this.claude.parse({
       schema: batchInstructionsTranslationSchema,
       system: TRANSLATE_SYSTEM,
+      track: { kind: 'translation' },
       effort: 'low',
       prompt:
         'Переведи шаги техники упражнений на русский. Для каждого упражнения верни его id ' +
@@ -277,6 +279,7 @@ export class ExercisesService {
       const { instructions } = await this.claude.parse({
         schema: instructionsTranslationSchema,
         system: TRANSLATE_SYSTEM,
+        track: { kind: 'translation' },
         effort: 'low',
         prompt:
           `Переведи шаги техники упражнения «${row.nameEn}» на русский. ` +

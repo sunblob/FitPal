@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   dailyTarget,
   languageFromTelegram,
@@ -21,6 +21,7 @@ export class UsersService {
       username: tg.username ?? null,
       firstName: tg.first_name ?? null,
       languageCode: tg.language_code ?? null,
+      lastSeenAt: sql`now()`,
     };
     // Язык берём из Telegram только при регистрации: дальше его меняет сам пользователь
     const [user] = await this.db

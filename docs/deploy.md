@@ -1,14 +1,15 @@
 # Деплой на Dokploy
 
-В проекте Dokploy `FitPal` три ресурса:
+В проекте Dokploy `FitPal` четыре ресурса:
 
 | Ресурс           | Тип         | Сборка                                             | Порт                          |
 | ---------------- | ----------- | -------------------------------------------------- | ----------------------------- |
 | `fitpal-db`      | Postgres 17 | —                                                  | 5432 (только внутренняя сеть) |
 | `fitpal-api`     | Application | Dockerfile `apps/api/Dockerfile`, контекст `.`     | 3000                          |
 | `fitpal-miniapp` | Application | Dockerfile `apps/miniapp/Dockerfile`, контекст `.` | 80                            |
+| `fitpal-admin`   | Application | Dockerfile `apps/admin/Dockerfile`, контекст `.`   | 80                            |
 
-Оба приложения собираются из ветки `main` репозитория и пересобираются автоматически на push.
+Все приложения собираются из ветки `main` репозитория и пересобираются автоматически на push.
 
 ## fitpal-api
 
@@ -27,6 +28,7 @@ PUBLIC_API_URL=https://<домен API>
 TELEGRAM_WEBHOOK_SECRET=<случайная строка>
 MINIAPP_URL=https://<домен Mini App>
 ANTHROPIC_API_KEY=<ключ Anthropic>
+ADMIN_TELEGRAM_IDS=<Telegram ID администраторов через запятую>
 # необязательно: ANTHROPIC_MODEL, EXERCISE_MEDIA_BASE_URL
 ```
 
@@ -52,6 +54,23 @@ VITE_API_URL=https://<домен API>
 ```
 
 После смены домена API нужно пересобрать Mini App.
+
+## fitpal-admin
+
+Админка: статистика, просмотр и правка пользователей, продуктов, упражнений и записей дневника.
+Build args:
+
+```
+VITE_API_URL=https://<домен API>
+VITE_ADMIN_BOT_USERNAME=<username бота без @>
+```
+
+Вход через Telegram Login Widget. Чтобы виджет работал, в @BotFather у бота нужно выполнить
+`/setdomain` и указать домен админки. API пускает только Telegram ID из `ADMIN_TELEGRAM_IDS`
+(переменная `fitpal-api`); если она пустая, админка выключена. Сессия живёт 12 часов и
+подписана ключом, выведенным из токена бота.
+
+Остаток лимитов по ключу Anthropic смотри в Console: https://platform.claude.com/usage.
 
 ## Домены и HTTPS
 

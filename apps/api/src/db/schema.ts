@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   date,
   uniqueIndex,
   index,
@@ -26,6 +27,13 @@ export const goalEnum = pgEnum('goal', ['lose', 'maintain', 'gain']);
 export const foodSourceEnum = pgEnum('food_source', ['manual', 'openfoodfacts', 'builtin', 'ai']);
 export const mealEnum = pgEnum('meal_type', ['breakfast', 'lunch', 'dinner', 'snack']);
 export const languageEnum = pgEnum('language', ['en', 'ru']);
+export const aiRequestKindEnum = pgEnum('ai_request_kind', [
+  'photo',
+  'label',
+  'text',
+  'workout_plan',
+  'translation',
+]);
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -56,6 +64,8 @@ export const users = pgTable('users', {
   targetFat: integer('target_fat'),
   targetCarbs: integer('target_carbs'),
   timezone: text('timezone').notNull().default('Europe/Moscow'),
+  /** Последний запрос из Mini App или сообщение боту, для статистики активности. */
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
   ...timestamps,
 });
 
@@ -204,6 +214,23 @@ export const exerciseLogs = pgTable(
   (t) => [uniqueIndex('exercise_logs_user_date_exercise_idx').on(t.userId, t.date, t.exerciseId)],
 );
 
+/** Журнал запросов к Claude: для статистики в админке. */
+export const aiRequests = pgTable(
+  'ai_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    kind: aiRequestKindEnum('kind').notNull(),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    ok: boolean('ok').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('ai_requests_created_idx').on(t.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Food = typeof foods.$inferSelect;
 export type DiaryEntry = typeof diaryEntries.$inferSelect;
@@ -212,3 +239,4 @@ export type StepLog = typeof stepLogs.$inferSelect;
 export type Exercise = typeof exercises.$inferSelect;
 export type WorkoutPlan = typeof workoutPlans.$inferSelect;
 export type ExerciseLog = typeof exerciseLogs.$inferSelect;
+export type AiRequest = typeof aiRequests.$inferSelect;
