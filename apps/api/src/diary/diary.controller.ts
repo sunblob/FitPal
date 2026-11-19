@@ -7,12 +7,14 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import { UuidParamDto } from '../common/dto/uuid-param.dto.js';
 import type { User } from '../db/schema.js';
+import { CloseDayDto } from './dto/close-day.dto.js';
 import { CopyDiaryDto } from './dto/copy-diary.dto.js';
 import { CreateDiaryEntryDto } from './dto/create-diary-entry.dto.js';
 import { DiaryDayQueryDto } from './dto/diary-day-query.dto.js';
@@ -32,6 +34,17 @@ export class DiaryController {
   @Post()
   add(@CurrentUser() user: User, @Body() body: CreateDiaryEntryDto) {
     return this.diary.add(user.id, body, user.language);
+  }
+
+  @Get('streak')
+  streak(@CurrentUser() user: User) {
+    return this.diary.streak(user);
+  }
+
+  @Put('closed')
+  @HttpCode(204)
+  setClosed(@CurrentUser() user: User, @Body() body: CloseDayDto) {
+    return this.diary.setClosed(user.id, body);
   }
 
   @Post('copy')

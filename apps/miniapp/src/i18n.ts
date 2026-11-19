@@ -56,6 +56,10 @@ const ru = {
     planLine: (from: number, to: number, weeks: number, date: string) =>
       `С ${from} до ${to} кг примерно за ${weeks} нед., к ${date}`,
     language: 'Язык',
+    reminders: 'Напоминание в боте',
+    remindersHint: 'Если к этому времени в дневнике за день ничего нет, бот напомнит записать еду.',
+    remindersOff: 'Не напоминать',
+    at: (hour: number) => `В ${hour}:00`,
   },
   diary: {
     prevDay: 'Предыдущий день',
@@ -75,6 +79,11 @@ const ru = {
       `${yesterday ? 'Как вчера' : 'Как днём раньше'} · ${kcal} ккал`,
     repeatDay: (yesterday: boolean): string =>
       yesterday ? 'Повторить вчерашний день' : 'Повторить предыдущий день',
+    streak: (n: number) => `${n} ${ruPlural(n, 'день', 'дня', 'дней')} подряд`,
+    streakStart: 'Записывай еду каждый день, и здесь начнётся серия',
+    closeDay: 'Всё записал за день',
+    dayClosed: 'День заполнен',
+    reopenDay: 'Отметить день незаполненным',
     repeatDayHint: (count: number, kcal: number) =>
       `${count} ${ruPlural(count, 'запись', 'записи', 'записей')} · ${kcal} ккал`,
   },
@@ -322,6 +331,10 @@ const en: Dict = {
     planLine: (from, to, weeks, date) =>
       `From ${from} to ${to} kg in about ${weeks} ${enPlural(weeks, 'week', 'weeks')}, by ${date}`,
     language: 'Language',
+    reminders: 'Bot reminder',
+    remindersHint: 'If nothing is logged by this time, the bot will remind you to log your food.',
+    remindersOff: "Don't remind me",
+    at: (hour) => `At ${hour}:00`,
   },
   diary: {
     prevDay: 'Previous day',
@@ -341,6 +354,11 @@ const en: Dict = {
       `${yesterday ? 'Same as yesterday' : 'Same as day before'} · ${kcal} kcal`,
     repeatDay: (yesterday) =>
       yesterday ? "Repeat yesterday's food" : "Repeat the previous day's food",
+    streak: (n) => `${n}-day streak`,
+    streakStart: 'Log your food every day to start a streak',
+    closeDay: "I'm done logging today",
+    dayClosed: 'Day complete',
+    reopenDay: 'Mark the day as not complete',
     repeatDayHint: (count, kcal) =>
       `${count} ${enPlural(count, 'entry', 'entries')} · ${kcal} kcal`,
   },

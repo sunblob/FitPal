@@ -45,6 +45,15 @@ export class UsersService {
     return user!;
   }
 
+  async setReminders(userId: string, reminderHour: number | null): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set({ reminderHour })
+      .where(eq(users.id, userId))
+      .returning();
+    return user!;
+  }
+
   /** Сохраняет профиль, пересчитывает дневную норму и записывает вес за сегодня. */
   async updateProfile(current: User, profile: Profile): Promise<User> {
     const userId = current.id;

@@ -19,11 +19,12 @@ import { put, type Me } from '../../lib/api';
 import { browserTimezone, formatDate, profileFromMe } from '../../lib/profile';
 
 const RATES = [0.25, 0.5, 0.75, 1];
+const REMINDER_HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
 
 export function ProfilePage(props: {
   me: Me;
   onSaved: (me: Me) => void;
-  onLanguageChanged: (me: Me) => void;
+  onMeChanged: (me: Me) => void;
   onboarding?: boolean;
 }) {
   const lang = getLanguage();
@@ -66,7 +67,17 @@ export function ProfilePage(props: {
   async function changeLanguage(language: Language) {
     if (language === props.me.language) return;
     try {
-      props.onLanguageChanged(await put<Me>('/me/language', { language }));
+      props.onMeChanged(await put<Me>('/me/language', { language }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function changeReminder(value: string) {
+    try {
+      props.onMeChanged(
+        await put<Me>('/me/reminders', { reminderHour: value === '' ? null : Number(value) }),
+      );
     } catch (e) {
       setError((e as Error).message);
     }
@@ -104,6 +115,27 @@ export function ProfilePage(props: {
           ))}
         </div>
       </section>
+
+      {!props.onboarding && (
+        <>
+          <div className="section-label">{L.profile.reminders}</div>
+          <section className="card form">
+            <select
+              aria-label={L.profile.reminders}
+              value={props.me.reminderHour ?? ''}
+              onChange={(e) => void changeReminder(e.target.value)}
+            >
+              <option value="">{L.profile.remindersOff}</option>
+              {REMINDER_HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {L.profile.at(h)}
+                </option>
+              ))}
+            </select>
+            <p className="muted small">{L.profile.remindersHint}</p>
+          </section>
+        </>
+      )}
 
       <div className="section-label">{L.profile.aboutYou}</div>
       <section className="card form">

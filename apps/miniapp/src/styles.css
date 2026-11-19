@@ -783,6 +783,77 @@ button.danger-link {
   background: var(--danger);
 }
 
+/* --- Серия дней и «день заполнен» --- */
+.day-done {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.streak {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: #f5a524;
+  background: rgba(245, 165, 36, 0.14);
+}
+
+.streak-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.streak-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.streak-day {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface-2);
+  text-transform: uppercase;
+}
+
+.streak-day.on {
+  color: #1a1206;
+  background: #f5a524;
+}
+
+button.day-closed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* --- Повтор вчерашнего --- */
 button.repeat-day {
   display: flex;

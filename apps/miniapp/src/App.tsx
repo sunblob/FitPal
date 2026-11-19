@@ -44,13 +44,7 @@ export function App() {
   // Пока нет нормы калорий, сначала просим заполнить профиль
   if (me.targetKcal == null) {
     return (
-      <ProfilePage
-        key={me.language}
-        me={me}
-        onSaved={applyMe}
-        onLanguageChanged={applyMe}
-        onboarding
-      />
+      <ProfilePage key={me.language} me={me} onSaved={applyMe} onMeChanged={applyMe} onboarding />
     );
   }
 
@@ -67,7 +61,7 @@ export function App() {
             applyMe(updated);
             setTab('diary');
           }}
-          onLanguageChanged={applyMe}
+          onMeChanged={applyMe}
         />
       )}
       <nav className="tabbar" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>

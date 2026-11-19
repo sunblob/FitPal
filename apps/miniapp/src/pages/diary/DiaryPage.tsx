@@ -8,6 +8,7 @@ import {
   type DiaryDayDto,
   type DiaryEntryDto,
   type MealType,
+  type StreakDto,
 } from '@fitpal/shared';
 import { CalorieRing } from '../../components/CalorieRing';
 import { FoodThumb } from '../../components/FoodThumb';
@@ -17,7 +18,7 @@ import { StepsCard } from '../../components/StepsCard';
 import { WorkoutToday } from '../../components/WorkoutToday';
 import { getLanguage, L, locale } from '../../i18n';
 import { useWorkoutLog } from '../../lib/workoutLog';
-import { api, del, post, type Me } from '../../lib/api';
+import { api, del, post, put, type Me } from '../../lib/api';
 import { formatDate } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
 import { EditEntrySheet } from './EditEntrySheet';
@@ -33,6 +34,9 @@ const weekday = (date: string) => {
   const name = new Date(`${date}T12:00:00`).toLocaleDateString(locale(), { weekday: 'long' });
   return name.charAt(0).toUpperCase() + name.slice(1);
 };
+
+const weekdayShort = (date: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(locale(), { weekday: 'narrow' });
 
 function Stat(props: { icon: IconName; label: string; value: number | undefined }) {
   return (
@@ -61,9 +65,21 @@ export function DiaryPage({ me }: { me: Me }) {
   const workout = useWorkoutLog(date);
   const prevDate = addDays(date, -1);
 
+  const [streak, setStreak] = useState<StreakDto | null>(null);
+
   const load = useCallback(() => {
     api<DiaryDayDto>(`/diary?date=${date}`).then(setDay, (e: Error) => setError(e.message));
+    api<StreakDto>('/diary/streak').then(setStreak, () => setStreak(null));
   }, [date]);
+
+  async function setClosed(closed: boolean) {
+    try {
+      await put('/diary/closed', { date, closed });
+      load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
 
   useEffect(load, [load]);
 
@@ -298,6 +314,45 @@ export function DiaryPage({ me }: { me: Me }) {
           </section>
         );
       })}
+
+      {day && (
+        <section className="card day-done">
+          {streak && (
+            <div className="streak">
+              <span className="streak-icon" aria-hidden="true">
+                <Icon name="flame" size={20} />
+              </span>
+              <div className="streak-text">
+                <strong>
+                  {streak.current > 0 ? L.diary.streak(streak.current) : L.diary.streakStart}
+                </strong>
+                <div className="streak-week">
+                  {streak.week.map((d) => (
+                    <span
+                      key={d.date}
+                      className={d.logged ? 'streak-day on' : 'streak-day'}
+                      title={formatDate(d.date)}
+                    >
+                      {weekdayShort(d.date)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {day.closed ? (
+            <button className="ghost day-closed" onClick={() => void setClosed(false)}>
+              <Icon name="check" size={18} />
+              {L.diary.dayClosed}
+              <span className="visually-hidden">{L.diary.reopenDay}</span>
+            </button>
+          ) : (
+            <button className="primary" onClick={() => void setClosed(true)}>
+              {L.diary.closeDay}
+            </button>
+          )}
+        </section>
+      )}
 
       {editing && (
         <EditEntrySheet
