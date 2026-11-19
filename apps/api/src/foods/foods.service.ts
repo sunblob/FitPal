@@ -66,12 +66,21 @@ export class FoodsService implements OnApplicationBootstrap {
   /** Продукт по штрихкоду: из кэша, иначе из Open Food Facts. */
   async byBarcode(code: string): Promise<FoodDto> {
     const cached = await this.db.query.foods.findFirst({ where: eq(foods.barcode, code) });
-    if (cached) return toFoodDto(cached);
+    if (cached) {
+      // Кэш до появления картинок: подтягиваем фото в фоне, ответ не ждёт OFF
+      if (cached.source === 'openfoodfacts' && !cached.imageUrl) void this.refreshImage(code);
+      return toFoodDto(cached);
+    }
 
     const product = await this.off.byBarcode(code);
     if (!product) throw new NotFoundException('Product not found');
     const [food] = await this.cache([product]);
     return toFoodDto(food!);
+  }
+
+  private async refreshImage(code: string): Promise<void> {
+    const product = await this.off.byBarcode(code);
+    if (product?.imageUrl) await this.cache([product]);
   }
 
   /** Сохраняет продукты из Open Food Facts как общие (без владельца), обновляя по штрихкоду. */
@@ -88,6 +97,7 @@ export class FoodsService implements OnApplicationBootstrap {
           source: 'openfoodfacts' as const,
           ownerId: null,
           searchText: buildSearchText(p),
+          imageUrl: p.imageUrl,
           ...p.per100g,
         })),
       )
@@ -97,6 +107,7 @@ export class FoodsService implements OnApplicationBootstrap {
           name: sql`excluded.name`,
           brand: sql`excluded.brand`,
           searchText: sql`excluded.search_text`,
+          imageUrl: sql`coalesce(excluded.image_url, ${foods.imageUrl})`,
           kcal: sql`excluded.kcal`,
           protein: sql`excluded.protein`,
           fat: sql`excluded.fat`,

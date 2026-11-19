@@ -6,6 +6,8 @@ export interface OffProduct {
   brand: string | null;
   /** Теги стран продаж, например en:slovakia. */
   countries: string[];
+  /** Фото товара с CDN Open Food Facts, если есть. */
+  imageUrl: string | null;
   per100g: Nutrients;
 }
 
@@ -42,6 +44,26 @@ const str = (v: unknown): string | undefined => {
 };
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** Берём только https-картинки с доменов Open Food Facts, чтобы не показывать чужие ссылки. */
+export function offImageUrl(p: Raw): string | null {
+  for (const key of ['image_front_small_url', 'image_front_url', 'image_small_url', 'image_url']) {
+    const v = p[key];
+    if (typeof v !== 'string') continue;
+    try {
+      const url = new URL(v);
+      if (
+        url.protocol === 'https:' &&
+        (url.hostname === 'openfoodfacts.org' || url.hostname.endsWith('.openfoodfacts.org'))
+      ) {
+        return url.toString();
+      }
+    } catch {
+      // невалидный URL, пробуем следующий
+    }
+  }
+  return null;
+}
+
 /**
  * Превращает продукт из ответа Open Food Facts в наш формат.
  * Возвращает null, если нет названия, штрихкода или калорийности.
@@ -71,6 +93,7 @@ export function parseOffProduct(raw: unknown): OffProduct | null {
     countries: Array.isArray(p.countries_tags)
       ? p.countries_tags.filter((c): c is string => typeof c === 'string')
       : [],
+    imageUrl: offImageUrl(p),
     per100g: {
       kcal: Math.round(kcal),
       protein: round1(num(n['proteins_100g']) ?? 0),

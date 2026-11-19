@@ -29,12 +29,38 @@ const NUTRIENTS = { 1008: 'kcal', 1003: 'protein', 1004: 'fat', 1005: 'carbs' };
 const descriptions = new Map();
 for (const r of csvRows('food.csv')) descriptions.set(r.fdc_id, r.description);
 
-const entries = readFileSync(join(here, 'foods.tsv'), 'utf8')
-  .split('\n')
-  .filter((l) => l.trim() && !l.startsWith('#'))
-  .map((l) => l.split('\t'));
+/** Заголовки групп в foods.tsv («# Овощи и зелень») → ключ категории для иконки в Mini App. */
+export const CATEGORIES = [
+  ['Крупы', 'grains'],
+  ['Хлеб', 'bread'],
+  ['Молочные', 'dairy'],
+  ['Мясо и птица', 'meat'],
+  ['Колбасы', 'sausages'],
+  ['Рыба', 'fish'],
+  ['Бобовые', 'legumes'],
+  ['Орехи', 'nuts'],
+  ['Овощи', 'vegetables'],
+  ['Фрукты', 'fruits'],
+  ['Масла', 'fats'],
+  ['Сладкое', 'sweets'],
+  ['Напитки', 'drinks'],
+  ['Приправы', 'spices'],
+  ['Готовые блюда', 'dishes'],
+];
 
-const wanted = new Set(entries.map((e) => e[0]).filter((k) => /^\d+$/.test(k)));
+let category = null;
+const entries = [];
+for (const line of readFileSync(join(here, 'foods.tsv'), 'utf8').split('\n')) {
+  if (line.startsWith('#')) {
+    const title = line.slice(1).trim();
+    const found = CATEGORIES.find(([prefix]) => title.startsWith(prefix));
+    if (found) category = found[1];
+    continue;
+  }
+  if (line.trim()) entries.push([category, ...line.split('\t')]);
+}
+
+const wanted = new Set(entries.map((e) => e[1]).filter((k) => /^\d+$/.test(k)));
 const values = new Map();
 for (const r of csvRows('food_nutrient.csv')) {
   const key = NUTRIENTS[r.nutrient_id];
@@ -45,7 +71,7 @@ for (const r of csvRows('food_nutrient.csv')) {
 const round1 = (n) => Math.round(n * 10) / 10;
 const ids = new Set();
 const errors = [];
-const foods = entries.map(([key, name, aliases = '', ...manual]) => {
+const foods = entries.map(([category, key, name, aliases = '', ...manual]) => {
   let per100g;
   let id;
   if (key.startsWith('ref:')) {
@@ -60,10 +86,12 @@ const foods = entries.map(([key, name, aliases = '', ...manual]) => {
   }
   if (Object.values(per100g).some((n) => !Number.isFinite(n))) errors.push(`${key} ${name}: КБЖУ`);
   if (ids.has(id)) errors.push(`${key}: дубль`);
+  if (!category) errors.push(`${key} ${name}: нет группы`);
   ids.add(id);
   return {
     id,
     name: name.trim(),
+    category,
     aliases: aliases
       .split(',')
       .map((a) => a.trim())

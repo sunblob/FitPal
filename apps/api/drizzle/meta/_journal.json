@@ -36,6 +36,13 @@
       "when": 1795093670337,
       "tag": "0004_exercise_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795093918637,
+      "tag": "0005_food_images",
+      "breakpoints": true
     }
   ]
 }

@@ -10,9 +10,11 @@ import {
   type MealType,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
-import { diaryEntries, type DiaryEntry, type User } from '../db/schema.js';
+import { diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
 
-function toEntryDto(e: DiaryEntry): DiaryEntryDto {
+type FoodLook = { imageUrl: string | null; category: string | null } | null;
+
+function toEntryDto(e: DiaryEntry, food: FoodLook = null): DiaryEntryDto {
   return {
     id: e.id,
     foodId: e.foodId,
@@ -21,6 +23,8 @@ function toEntryDto(e: DiaryEntry): DiaryEntryDto {
     grams: e.grams,
     eatenAt: e.eatenAt.toISOString(),
     nutrients: { kcal: e.kcal, protein: e.protein, fat: e.fat, carbs: e.carbs },
+    imageUrl: food?.imageUrl ?? null,
+    category: food?.category ?? null,
   };
 }
 
@@ -32,12 +36,17 @@ export class DiaryService {
   async day(user: User, date: string): Promise<DiaryDayDto> {
     const localDate = sql`(${diaryEntries.eatenAt} at time zone ${user.timezone})::date`;
     const rows = await this.db
-      .select()
+      .select({
+        entry: diaryEntries,
+        // id первым: drizzle решает, что left join пустой, по первому полю объекта
+        food: { id: foods.id, imageUrl: foods.imageUrl, category: foods.category },
+      })
       .from(diaryEntries)
+      .leftJoin(foods, eq(foods.id, diaryEntries.foodId))
       .where(and(eq(diaryEntries.userId, user.id), sql`${localDate} = ${date}::date`))
       .orderBy(asc(diaryEntries.eatenAt), asc(diaryEntries.createdAt));
 
-    const entries = rows.map(toEntryDto);
+    const entries = rows.map((r) => toEntryDto(r.entry, r.food));
     const meals = Object.fromEntries(
       MEAL_TYPES.map((meal) => {
         const list = entries.filter((e) => e.meal === meal);
@@ -77,7 +86,12 @@ export class DiaryService {
         ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
       })
       .returning();
-    return toEntryDto(entry!);
+    if (!entry!.foodId) return toEntryDto(entry!);
+    const [food] = await this.db
+      .select({ imageUrl: foods.imageUrl, category: foods.category })
+      .from(foods)
+      .where(eq(foods.id, entry!.foodId));
+    return toEntryDto(entry!, food ?? null);
   }
 
   async remove(userId: string, id: string): Promise<void> {

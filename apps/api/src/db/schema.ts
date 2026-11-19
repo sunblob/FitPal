@@ -72,6 +72,10 @@ export const foods = pgTable(
     searchText: text('search_text'),
     /** Порядок во встроенном справочнике: самые обычные продукты группы идут первыми. */
     sortOrder: integer('sort_order'),
+    /** Картинка товара из Open Food Facts (маленькая, с их CDN). */
+    imageUrl: text('image_url'),
+    /** Группа встроенного справочника (vegetables, dairy…), по ней Mini App выбирает иконку. */
+    category: text('category'),
     source: foodSourceEnum('source').notNull(),
     ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
     kcal: real('kcal').notNull(),

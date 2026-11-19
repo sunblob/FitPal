@@ -8,6 +8,7 @@ import {
   type MealType,
 } from '@fitpal/shared';
 import { CalorieRing } from '../../components/CalorieRing';
+import { FoodThumb } from '../../components/FoodThumb';
 import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { StepsCard } from '../../components/StepsCard';
@@ -151,6 +152,7 @@ export function DiaryPage({ me }: { me: Me }) {
               <ul className="entries">
                 {entries.map((e) => (
                   <li key={e.id} className="entry">
+                    <FoodThumb imageUrl={e.imageUrl} category={e.category} />
                     <div className="entry-main">
                       <div className="entry-name">{e.name}</div>
                       <div className="muted small">
