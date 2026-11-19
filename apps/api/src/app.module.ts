@@ -4,6 +4,8 @@ import { DbModule } from './db/db.module.js';
 import { UsersModule } from './users/users.module.js';
 import { BotModule } from './bot/bot.module.js';
 import { WeightModule } from './weight/weight.module.js';
+import { FoodsModule } from './foods/foods.module.js';
+import { DiaryModule } from './diary/diary.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { ExercisesModule } from './exercises/exercises.module.js';
 import { WorkoutsModule } from './workouts/workouts.module.js';
@@ -15,6 +17,8 @@ import { HealthController } from './health/health.controller.js';
     DbModule,
     UsersModule,
     WeightModule,
+    FoodsModule,
+    DiaryModule,
     AiModule,
     ExercisesModule,
     WorkoutsModule,
