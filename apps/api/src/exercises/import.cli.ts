@@ -1,7 +1,8 @@
 /**
- * Импорт каталога упражнений из free-exercise-db и перевод названий на русский.
+ * Импорт каталога упражнений из free-exercise-db и перевод названий и техники на русский.
+ * Уже переведённое не трогает, поэтому повторный запуск доделывает только недостающее.
  *
- *   pnpm --filter @fitpal/api exercises:import            # импорт + перевод названий
+ *   pnpm --filter @fitpal/api exercises:import            # импорт + перевод
  *   pnpm --filter @fitpal/api exercises:import --no-translate
  *   pnpm --filter @fitpal/api exercises:import --url=https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json
  */
@@ -31,11 +32,13 @@ async function main() {
 
     if (process.argv.includes('--no-translate')) return;
     if (!app.get(ClaudeService).enabled) {
-      log.warn('ANTHROPIC_API_KEY не задан, названия останутся на английском');
+      log.warn('ANTHROPIC_API_KEY не задан, названия и техника останутся на английском');
       return;
     }
     const translated = await service.translateMissingNames();
     log.log(`Переведено названий: ${translated}`);
+    const instructions = await service.translateMissingInstructions();
+    log.log(`Переведено инструкций: ${instructions}`);
   } finally {
     await app.close();
   }

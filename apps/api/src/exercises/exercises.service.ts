@@ -31,6 +31,9 @@ const nameTranslationSchema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
 });
 const instructionsTranslationSchema = z.object({ instructions: z.array(z.string()) });
+const batchInstructionsTranslationSchema = z.object({
+  items: z.array(z.object({ id: z.string(), instructions: z.array(z.string()) })),
+});
 
 const TRANSLATE_SYSTEM =
   'Ты переводчик фитнес-терминологии с английского на русский. Используй названия упражнений, ' +
@@ -125,6 +128,74 @@ export class ExercisesService {
       done += translated;
       this.logger.log(`Переведено названий: ${done}`);
     }
+  }
+
+  /**
+   * Переводит на русский технику всех упражнений, где её ещё нет, чтобы карточки
+   * не ходили в Claude при открытии. Пачки по `batchSize` упражнений, `concurrency` запросов
+   * параллельно. Пачки с ошибкой пропускает: их доделает следующий запуск или карточка.
+   */
+  async translateMissingInstructions(batchSize = 10, concurrency = 4): Promise<number> {
+    const rows = await this.db
+      .select({ id: exercises.id, nameEn: exercises.nameEn, steps: exercises.instructionsEn })
+      .from(exercises)
+      .where(
+        and(
+          isNull(exercises.instructionsRu),
+          sql`jsonb_array_length(${exercises.instructionsEn}) > 0`,
+        ),
+      )
+      .orderBy(exercises.id);
+    const batches: (typeof rows)[] = [];
+    for (let i = 0; i < rows.length; i += batchSize) batches.push(rows.slice(i, i + batchSize));
+
+    let done = 0;
+    let failed = 0;
+    const worker = async () => {
+      for (let batch = batches.shift(); batch; batch = batches.shift()) {
+        try {
+          done += await this.translateInstructionsBatch(batch);
+        } catch (e) {
+          failed++;
+          this.logger.warn(`Пачка инструкций не переведена: ${String(e)}`);
+        }
+        this.logger.log(`Переведено инструкций: ${done} из ${rows.length}`);
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
+    if (failed > 0) this.logger.warn(`Пачек с ошибкой: ${failed}, перезапусти импорт`);
+    return done;
+  }
+
+  private async translateInstructionsBatch(
+    batch: { id: string; nameEn: string; steps: string[] }[],
+  ): Promise<number> {
+    const { items } = await this.claude.parse({
+      schema: batchInstructionsTranslationSchema,
+      system: TRANSLATE_SYSTEM,
+      effort: 'low',
+      prompt:
+        'Переведи шаги техники упражнений на русский. Для каждого упражнения верни его id ' +
+        'без изменений и шаги в том же количестве и порядке.\n\n' +
+        batch
+          .map(
+            (e) =>
+              `## ${e.id} (${e.nameEn})\n` + e.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+          )
+          .join('\n\n'),
+    });
+    const known = new Set(batch.map((e) => e.id));
+    let translated = 0;
+    for (const item of items) {
+      const steps = item.instructions.map((s) => s.trim()).filter(Boolean);
+      if (!known.has(item.id) || steps.length === 0) continue;
+      await this.db
+        .update(exercises)
+        .set({ instructionsRu: steps })
+        .where(eq(exercises.id, item.id));
+      translated++;
+    }
+    return translated;
   }
 
   /**
