@@ -67,6 +67,15 @@ const ru = {
     workout: 'Тренировка',
     empty: 'Пока пусто',
     addTo: (meal: string) => `Добавить в ${meal.toLowerCase()}`,
+    editEntry: (name: string) => `Изменить: ${name}`,
+  },
+  edit: {
+    title: 'Запись',
+    portion: 'Вес порции, г',
+    meal: 'Приём пищи',
+    time: 'Время',
+    remove: 'Удалить из дневника',
+    confirmRemove: 'Точно удалить? Нажми ещё раз',
   },
   ring: { eaten: 'ккал съедено', over: 'ккал сверх нормы', left: 'ккал осталось' },
   add: {
@@ -309,6 +318,15 @@ const en: Dict = {
     workout: 'Workout',
     empty: 'Nothing yet',
     addTo: (meal) => `Add to ${meal.toLowerCase()}`,
+    editEntry: (name) => `Edit ${name}`,
+  },
+  edit: {
+    title: 'Entry',
+    portion: 'Portion, g',
+    meal: 'Meal',
+    time: 'Time',
+    remove: 'Remove from diary',
+    confirmRemove: 'Tap again to remove',
   },
   ring: { eaten: 'kcal eaten', over: 'kcal over', left: 'kcal left' },
   add: {

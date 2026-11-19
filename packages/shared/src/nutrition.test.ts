@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bmr, dailyTarget, scaleNutrients, weightPlan } from './nutrition.js';
+import { bmr, dailyTarget, rescaleNutrients, scaleNutrients, weightPlan } from './nutrition.js';
 import type { Profile } from './schemas.js';
 
 const profile: Profile = {
@@ -29,6 +29,22 @@ test('scaleNutrients scales per-100g values', () => {
     fat: 5,
     carbs: 93.2,
   });
+});
+
+test('rescaleNutrients recalculates a portion for a new weight', () => {
+  const n = scaleNutrients({ kcal: 343, protein: 12.6, fat: 3.3, carbs: 62.1 }, 150);
+  assert.deepEqual(rescaleNutrients(n, 150, 300), {
+    kcal: 1030,
+    protein: 37.8,
+    fat: 10,
+    carbs: 186.4,
+  });
+  assert.deepEqual(rescaleNutrients(n, 150, 150), n);
+});
+
+test('rescaleNutrients keeps values when the old weight is zero', () => {
+  const n = { kcal: 10, protein: 1, fat: 1, carbs: 1 };
+  assert.deepEqual(rescaleNutrients(n, 0, 100), n);
 });
 
 test('dailyTarget subtracts deficit for weight loss', () => {

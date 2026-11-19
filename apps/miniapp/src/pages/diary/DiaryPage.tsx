@@ -5,6 +5,7 @@ import {
   addDays,
   todayIn,
   type DiaryDayDto,
+  type DiaryEntryDto,
   type MealType,
 } from '@fitpal/shared';
 import { CalorieRing } from '../../components/CalorieRing';
@@ -18,6 +19,7 @@ import { useWorkoutLog } from '../../lib/workoutLog';
 import { api, del, type Me } from '../../lib/api';
 import { formatDate } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
+import { EditEntrySheet } from './EditEntrySheet';
 
 const MEAL_ICONS: Record<MealType, string> = {
   breakfast: '🥣',
@@ -51,6 +53,7 @@ export function DiaryPage({ me }: { me: Me }) {
   const [day, setDay] = useState<DiaryDayDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<MealType | null>(null);
+  const [editing, setEditing] = useState<DiaryEntryDto | null>(null);
   const workout = useWorkoutLog(date);
 
   const load = useCallback(() => {
@@ -165,19 +168,25 @@ export function DiaryPage({ me }: { me: Me }) {
               <ul className="entries">
                 {entries.map((e) => (
                   <li key={e.id} className="entry">
-                    <FoodThumb imageUrl={e.imageUrl} category={e.category} />
-                    <div className="entry-main">
-                      <div className="entry-name">{e.name}</div>
-                      <div className="muted small">
-                        {e.grams} {L.common.g} ·{' '}
-                        {L.common.pfc(
-                          Math.round(e.nutrients.protein),
-                          Math.round(e.nutrients.fat),
-                          Math.round(e.nutrients.carbs),
-                        )}
+                    <button
+                      className="entry-open"
+                      onClick={() => setEditing(e)}
+                      aria-label={L.diary.editEntry(e.name)}
+                    >
+                      <FoodThumb imageUrl={e.imageUrl} category={e.category} />
+                      <div className="entry-main">
+                        <div className="entry-name">{e.name}</div>
+                        <div className="muted small">
+                          {e.grams} {L.common.g} ·{' '}
+                          {L.common.pfc(
+                            Math.round(e.nutrients.protein),
+                            Math.round(e.nutrients.fat),
+                            Math.round(e.nutrients.carbs),
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <span className="entry-kcal">{Math.round(e.nutrients.kcal)}</span>
+                      <span className="entry-kcal">{Math.round(e.nutrients.kcal)}</span>
+                    </button>
                     <button
                       className="icon-btn small-btn"
                       onClick={() => remove(e.id)}
@@ -192,6 +201,18 @@ export function DiaryPage({ me }: { me: Me }) {
           </section>
         );
       })}
+
+      {editing && (
+        <EditEntrySheet
+          entry={editing}
+          date={date}
+          onClose={() => setEditing(null)}
+          onChanged={() => {
+            setEditing(null);
+            load();
+          }}
+        />
+      )}
 
       {addingTo && (
         <AddFoodSheet
