@@ -6,6 +6,7 @@ import { BotModule } from './bot/bot.module.js';
 import { WeightModule } from './weight/weight.module.js';
 import { FoodsModule } from './foods/foods.module.js';
 import { DiaryModule } from './diary/diary.module.js';
+import { RecognitionModule } from './recognition/recognition.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { ExercisesModule } from './exercises/exercises.module.js';
 import { WorkoutsModule } from './workouts/workouts.module.js';
@@ -19,6 +20,7 @@ import { HealthController } from './health/health.controller.js';
     WeightModule,
     FoodsModule,
     DiaryModule,
+    RecognitionModule,
     AiModule,
     ExercisesModule,
     WorkoutsModule,

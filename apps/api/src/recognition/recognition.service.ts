@@ -1,0 +1,74 @@
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  photoRecognitionSchema,
+  type ImageMediaType,
+  type PhotoRecognition,
+  type RecognizedFood,
+} from '@fitpal/shared';
+import { ClaudeService } from '../ai/claude.service.js';
+import { RECOGNITION_SYSTEM, recognitionPrompt } from './recognition.prompt.js';
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Приводит ответ модели к разумным границам, чтобы не попасть в дневник с мусором. */
+export function sanitizeRecognition(raw: PhotoRecognition): PhotoRecognition {
+  const items: RecognizedFood[] = raw.items
+    .filter((i) => i.name.trim() && Number.isFinite(i.grams) && i.grams > 0)
+    .map((i) => ({
+      name: i.name.trim().slice(0, 200),
+      grams: Math.round(clamp(i.grams, 1, 5000)),
+      per100g: {
+        kcal: Math.round(clamp(i.per100g.kcal, 0, 900)),
+        protein: round1(clamp(i.per100g.protein, 0, 100)),
+        fat: round1(clamp(i.per100g.fat, 0, 100)),
+        carbs: round1(clamp(i.per100g.carbs, 0, 100)),
+      },
+    }));
+  return { items, note: raw.note?.trim() || null };
+}
+
+/** Сколько фото один пользователь может распознать за час: защищает ключ Anthropic от перерасхода. */
+const HOURLY_LIMIT = 30;
+const HOUR_MS = 60 * 60 * 1000;
+
+@Injectable()
+export class RecognitionService {
+  private readonly usage = new Map<string, number[]>();
+
+  constructor(private readonly claude: ClaudeService) {}
+
+  private consume(userId: string) {
+    const now = Date.now();
+    const recent = (this.usage.get(userId) ?? []).filter((t) => now - t < HOUR_MS);
+    if (recent.length >= HOURLY_LIMIT) {
+      throw new HttpException(
+        'Слишком много фото за час, попробуй позже',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    recent.push(now);
+    this.usage.set(userId, recent);
+  }
+
+  get enabled() {
+    return this.claude.enabled;
+  }
+
+  async recognize(
+    userId: string,
+    image: { mediaType: ImageMediaType; data: string },
+    hint?: string,
+  ): Promise<PhotoRecognition> {
+    this.consume(userId);
+    const raw = await this.claude.parse({
+      schema: photoRecognitionSchema,
+      system: RECOGNITION_SYSTEM,
+      prompt: recognitionPrompt(hint),
+      images: [image],
+      effort: 'medium',
+      maxTokens: 8000,
+    });
+    return sanitizeRecognition(raw);
+  }
+}
