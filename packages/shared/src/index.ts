@@ -8,3 +8,4 @@ export * from './admin.js';
 export * from './streak.js';
 export * from './water.js';
 export * from './week.js';
+export * from './weight-stats.js';

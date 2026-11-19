@@ -71,6 +71,8 @@ export const users = pgTable('users', {
   reminderHour: integer('reminder_hour').default(20),
   /** Местная дата последнего напоминания, чтобы не слать дважды за день. */
   lastReminderOn: date('last_reminder_on', { mode: 'string' }),
+  /** Местная дата последнего воскресного итога недели. */
+  lastWeeklyReportOn: date('last_weekly_report_on', { mode: 'string' }),
   ...timestamps,
 });
 
