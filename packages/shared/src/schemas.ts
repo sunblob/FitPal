@@ -158,6 +158,8 @@ export interface RecentFoodDto {
 
 export interface DiaryDayDto {
   date: string;
+  /** Пользователь отметил день как заполненный. */
+  closed: boolean;
   target: Nutrients | null;
   totals: Nutrients;
   meals: Record<MealType, { entries: DiaryEntryDto[]; totals: Nutrients }>;

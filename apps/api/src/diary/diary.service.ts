@@ -1,20 +1,24 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import {
   MEAL_TYPES,
   rescaleNutrients,
   scaleNutrients,
+  streakDto,
+  todayIn,
   sumNutrients,
+  type CloseDay,
   type CopyDiary,
   type CreateDiaryEntry,
   type DiaryDayDto,
   type DiaryEntryDto,
   type Language,
   type MealType,
+  type StreakDto,
   type UpdateDiaryEntry,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
-import { diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
+import { closedDays, diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
 
 type FoodLook = {
   name: string;
@@ -88,8 +92,14 @@ export class DiaryService {
           }
         : null;
 
+    const [closed] = await this.db
+      .select({ date: closedDays.date })
+      .from(closedDays)
+      .where(and(eq(closedDays.userId, user.id), eq(closedDays.date, date)));
+
     return {
       date,
+      closed: closed != null,
       target,
       totals: sumNutrients(entries.map((e) => e.nutrients)),
       meals,
@@ -111,6 +121,37 @@ export class DiaryService {
       })
       .returning();
     return this.withFood(entry!, lang);
+  }
+
+  async setClosed(userId: string, input: CloseDay): Promise<void> {
+    if (input.closed) {
+      await this.db.insert(closedDays).values({ userId, date: input.date }).onConflictDoNothing();
+    } else {
+      await this.db
+        .delete(closedDays)
+        .where(and(eq(closedDays.userId, userId), eq(closedDays.date, input.date)));
+    }
+  }
+
+  /** Местные даты за последний год, в которые есть записи или день отмечен заполненным. */
+  async loggedDates(user: User): Promise<Set<string>> {
+    const since = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000);
+    const localDate = sql<string>`to_char(${diaryEntries.eatenAt} at time zone ${user.timezone}, 'YYYY-MM-DD')`;
+    const [entries, closed] = await Promise.all([
+      this.db
+        .selectDistinct({ date: localDate })
+        .from(diaryEntries)
+        .where(and(eq(diaryEntries.userId, user.id), gte(diaryEntries.eatenAt, since))),
+      this.db
+        .select({ date: closedDays.date })
+        .from(closedDays)
+        .where(eq(closedDays.userId, user.id)),
+    ]);
+    return new Set([...entries, ...closed].map((r) => r.date));
+  }
+
+  async streak(user: User): Promise<StreakDto> {
+    return streakDto(await this.loggedDates(user), todayIn(user.timezone));
   }
 
   /**

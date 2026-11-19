@@ -79,7 +79,7 @@ export class BotService implements OnApplicationBootstrap, OnApplicationShutdown
     this.bot.catch((err) => this.logger.error(err.error, err.stack));
   }
 
-  private miniAppKeyboard(lang: Language) {
+  miniAppKeyboard(lang: Language) {
     return this.env.MINIAPP_URL
       ? new InlineKeyboard().webApp(BOT_TEXT[lang].openDiary, this.env.MINIAPP_URL)
       : undefined;

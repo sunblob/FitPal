@@ -67,6 +67,10 @@ export const users = pgTable('users', {
   timezone: text('timezone').notNull().default('Europe/Moscow'),
   /** Последний запрос из Mini App или сообщение боту, для статистики активности. */
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  /** Час вечернего напоминания в боте по местному времени, null — выключено. */
+  reminderHour: integer('reminder_hour').default(20),
+  /** Местная дата последнего напоминания, чтобы не слать дважды за день. */
+  lastReminderOn: date('last_reminder_on', { mode: 'string' }),
   ...timestamps,
 });
 
@@ -123,6 +127,19 @@ export const diaryEntries = pgTable(
     ...timestamps,
   },
   (t) => [index('diary_user_eaten_idx').on(t.userId, t.eatenAt)],
+);
+
+/** Дни, которые пользователь отметил как заполненные («всё записал»). */
+export const closedDays = pgTable(
+  'closed_days',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: date('date', { mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] })],
 );
 
 /** Избранные продукты пользователя: показываются отдельной вкладкой в поиске. */

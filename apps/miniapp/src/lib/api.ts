@@ -39,6 +39,8 @@ export interface Me {
   targetWeightKg: number | null;
   weeklyRateKg: number | null;
   timezone: string;
+  /** Час напоминания в боте, null — выключено. */
+  reminderHour: number | null;
   targetKcal: number | null;
   targetProtein: number | null;
   targetFat: number | null;

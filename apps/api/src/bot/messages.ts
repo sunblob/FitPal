@@ -1,5 +1,13 @@
 import type { Language } from '@fitpal/shared';
 
+const ruDays = (n: number) => {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'день';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'дня';
+  return 'дней';
+};
+
 /** Тексты бота на каждом языке. */
 export const BOT_TEXT = {
   ru: {
@@ -30,6 +38,11 @@ export const BOT_TEXT = {
     chooseLanguage: 'Выбери язык:',
     languageSet: 'Готово, теперь я говорю по-русски.',
     commands: { start: 'Начать', language: 'Язык / Language' },
+    reminder: (streak: number) =>
+      (streak > 1
+        ? `Сегодня в дневнике пока пусто, а серия уже ${streak} ${ruDays(streak)} подряд. Запиши еду, чтобы её не прервать.`
+        : 'Сегодня в дневнике пока пусто. Запиши, что ел: можно прислать фото тарелки или написать сюда словами.') +
+      '\n\nВыключить или перенести напоминание можно в профиле.',
   },
   en: {
     greeting: (name: string | null) =>
@@ -61,6 +74,11 @@ export const BOT_TEXT = {
     chooseLanguage: 'Choose a language:',
     languageSet: "Done, I'll speak English now.",
     commands: { start: 'Start', language: 'Language / Язык' },
+    reminder: (streak: number) =>
+      (streak > 1
+        ? `Nothing logged today yet, and you're on a ${streak}-day streak. Log your food to keep it going.`
+        : 'Nothing logged today yet. Tell me what you ate: send a photo of your plate or just type it here.') +
+      '\n\nYou can turn this reminder off or change its time in your profile.',
   },
 } satisfies Record<Language, unknown>;
 
