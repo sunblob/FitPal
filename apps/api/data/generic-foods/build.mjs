@@ -68,6 +68,14 @@ for (const r of csvRows('food_nutrient.csv')) {
   values.set(r.fdc_id, { ...values.get(r.fdc_id), [key]: Number(r.amount) });
 }
 
+/** Английские названия: names-en.tsv, ключ как в foods.tsv. */
+const namesEn = new Map(
+  readFileSync(join(here, 'names-en.tsv'), 'utf8')
+    .split('\n')
+    .filter((l) => l.trim() && !l.startsWith('#'))
+    .map((l) => l.split('\t').map((s) => s.trim())),
+);
+
 const round1 = (n) => Math.round(n * 10) / 10;
 const ids = new Set();
 const errors = [];
@@ -87,10 +95,12 @@ const foods = entries.map(([category, key, name, aliases = '', ...manual]) => {
   if (Object.values(per100g).some((n) => !Number.isFinite(n))) errors.push(`${key} ${name}: КБЖУ`);
   if (ids.has(id)) errors.push(`${key}: дубль`);
   if (!category) errors.push(`${key} ${name}: нет группы`);
+  if (!namesEn.get(key)) errors.push(`${key} ${name}: нет английского названия`);
   ids.add(id);
   return {
     id,
     name: name.trim(),
+    nameEn: namesEn.get(key),
     category,
     aliases: aliases
       .split(',')

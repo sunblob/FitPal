@@ -1,0 +1,490 @@
+# Английские названия продуктов справочника для пользователей с языком English.
+# Колонки (через табуляцию): ключ из foods.tsv, название на английском.
+168877	White rice, long-grain, dry
+168878	White rice, long-grain, cooked
+168881	Short-grain rice, dry
+168882	Short-grain rice, cooked
+169708	Parboiled rice, cooked
+169703	Brown rice, dry
+169704	Brown rice, cooked
+168883	Glutinous rice, dry
+169726	Wild rice, dry
+170685	Buckwheat, dry
+170686	Buckwheat, cooked
+173904	Rolled oats
+169702	Millet, dry
+168871	Millet, cooked
+170284	Pearl barley, dry
+170285	Pearl barley, cooked
+169715	Semolina
+170688	Bulgur, dry
+170287	Bulgur, cooked
+169699	Couscous, dry
+169700	Couscous, cooked
+168874	Quinoa, dry
+168917	Quinoa, cooked
+170682	Amaranth, dry
+169745	Spelt, dry
+168920	Corn grits
+171655	Corn porridge with water
+171659	Semolina porridge with water
+169736	Pasta, dry
+169737	Pasta, cooked
+169731	Egg noodles, dry
+169732	Egg noodles, cooked
+169742	Rice noodles, dry
+168914	Rice noodles, cooked
+168906	Soba noodles, dry
+168907	Soba noodles, cooked
+168894	Wheat flour
+168944	Whole wheat flour
+168886	Rye flour
+170687	Buckwheat flour
+168898	Rice flour
+169697	Corn flour
+169698	Cornstarch
+168872	Oat bran
+169722	Wheat bran
+174924	White bread
+172684	Rye bread
+172688	Whole wheat bread
+168013	Multigrain bread
+172675	Baguette
+174918	Pumpernickel bread
+174915	Pita, flatbread
+173242	Wheat tortilla
+172739	Rye crispbread
+170250	Rice cakes
+172746	Saltine crackers
+174929	Breadsticks
+174987	Croissant
+172796	Hamburger bun
+172793	Bread roll
+174990	Doughnut
+172704	Muffin
+172706	Sponge cake
+174934	Chocolate cake
+173239	Apple pie
+172725	Oatmeal cookies
+174950	Butter cookies
+172716	Chocolate chip cookies
+167926	Pancakes
+169779	Pierogi with potato or cheese
+171265	Milk 3.25%
+171267	Milk 2%
+170872	Milk 1%
+171269	Skim milk
+ref:milk-2-5	Milk 2.5%
+ref:milk-3-2	Milk 3.2%
+ref:kefir-1	Kefir 1%
+ref:kefir-2-5	Kefir 2.5%
+ref:kefir-3-2	Kefir 3.2%
+ref:ryazhenka-4	Ryazhenka (baked fermented milk) 4%
+ref:tvorog-0	Cottage cheese (tvorog) 0%
+ref:tvorog-5	Cottage cheese (tvorog) 5%
+ref:tvorog-9	Cottage cheese (tvorog) 9%
+ref:smetana-10	Sour cream 10%
+ref:smetana-15	Sour cream 15%
+ref:smetana-20	Sour cream 20%
+171257	Sour cream (US) 20%
+170857	Cream 20%
+170859	Heavy cream 36%
+170860	Whipped cream, aerosol
+171284	Plain yogurt
+170886	Plain yogurt, low-fat
+171304	Greek yogurt
+170894	Greek yogurt, nonfat
+173456	Fruit yogurt
+172179	Cottage cheese
+172182	Cottage cheese 2%
+171275	Condensed milk
+170876	Powdered milk
+171282	Whey
+170899	Cheddar cheese
+170845	Mozzarella
+170847	Mozzarella, part-skim
+170848	Parmesan
+173420	Feta
+171241	Gouda
+173419	Edam
+171251	Swiss cheese
+171242	Gruyère
+172177	Brie
+172178	Camembert
+172175	Blue cheese
+173418	Cream cheese
+170851	Ricotta
+173435	Goat cheese, soft
+170850	Provolone
+ref:bryndza	Slovak bryndza
+ref:syr-plavleny	Processed cheese
+173410	Butter
+173412	Ghee
+171287	Chicken egg
+173424	Hard-boiled egg
+173423	Fried egg
+172187	Omelet
+172183	Egg white
+172184	Egg yolk
+172191	Quail egg
+175006	Pancakes from mix
+167575	Vanilla ice cream
+168809	Chocolate ice cream
+171077	Chicken breast
+171477	Chicken breast, roasted
+173627	Chicken thigh, skinless
+172385	Chicken thigh with skin
+172373	Chicken drumstick
+172390	Chicken wings
+171447	Whole chicken
+171450	Chicken, roasted
+171116	Ground chicken
+171060	Chicken liver
+171456	Chicken gizzards
+171458	Chicken hearts
+171098	Turkey breast
+172850	Ground turkey
+172941	Turkey ham
+173874	Smoked chicken breast, sliced
+172408	Duck
+172413	Goose
+174030	Ground beef 10% fat
+174036	Ground beef 20% fat
+171796	Ground beef 15% fat
+171812	Beef tenderloin
+169529	Beef round
+169491	Beef chuck
+168607	Beef brisket
+169451	Beef liver
+170196	Beef tongue
+168625	Beef heart
+173817	Veal
+168249	Pork tenderloin
+167818	Pork loin
+167843	Pork shoulder
+167902	Ground pork
+167812	Pork belly
+167853	Pork ribs
+167862	Pork liver
+167811	Salo (pork fatback)
+168277	Bacon
+172479	Lamb
+174370	Ground lamb
+172521	Rabbit
+173855	Venison
+173864	Ham
+167872	Ham, roasted
+ref:kolbasa-varenaya	Bologna sausage
+ref:sosiski	Frankfurters
+173862	Beef frankfurters
+174582	Dry-cured sausage
+172936	Semi-smoked sausage
+172954	Polish kielbasa, smoked
+171631	Pork sausages, raw
+174575	Pepperoni
+171618	Blood sausage
+173869	Liverwurst
+172930	Liver pâté
+174571	Canned stewed pork
+170602	Canned stewed beef
+175167	Salmon
+173686	Wild salmon
+175138	Pink salmon
+173690	Pink salmon, canned
+171985	Lightly salted salmon
+171955	Cod
+173725	Pollock
+171964	Haddock
+175159	Tuna
+173709	Tuna, canned in water
+173708	Tuna, canned in oil
+175119	Mackerel
+175116	Herring
+175118	Pickled herring
+173668	Smoked herring
+171952	Carp
+173717	Trout
+173680	Pike
+173678	Perch
+175176	Tilapia
+175139	Sardines in oil
+175165	Catfish
+174200	Halibut
+174196	Flounder
+175142	Sea bass
+174182	Anchovies
+174188	Caviar
+175132	Fish roe, raw
+174190	Dried salted cod
+175179	Shrimp
+175180	Shrimp, cooked
+175164	Crab
+174208	Lobster
+174223	Squid
+174216	Mussels
+174218	Octopus
+174220	Scallops
+171978	Oysters
+172420	Lentils, dry
+172421	Lentils, cooked
+174284	Red lentils, dry
+175193	Red kidney beans, dry
+173740	Red kidney beans, cooked
+174285	Canned beans
+175202	White beans, dry
+173734	Black beans, dry
+173735	Black beans, cooked
+173756	Chickpeas, dry
+173757	Chickpeas, cooked
+173800	Chickpeas, canned
+172428	Split peas, dry
+172429	Peas, cooked
+174256	Mung beans
+174270	Soybeans
+172475	Tofu, firm
+172476	Tofu, soft
+174289	Hummus
+175182	Baked beans in tomato sauce
+172446	Soy milk
+172430	Peanuts
+173806	Peanuts, roasted
+172470	Peanut butter
+170567	Almonds
+170187	Walnuts
+170581	Hazelnuts
+170162	Cashews
+170184	Pistachios
+170591	Pine nuts
+170569	Brazil nuts
+170182	Pecans
+170178	Macadamia nuts
+170190	Roasted chestnuts
+170170	Shredded coconut
+170169	Coconut meat
+170562	Sunflower seeds
+170563	Sunflower seeds, roasted
+170556	Pumpkin seeds
+170150	Sesame seeds
+169414	Flaxseeds
+170554	Chia seeds
+170148	Hemp seeds
+170189	Tahini
+170026	Potato
+170438	Potato, boiled
+170093	Potato, baked
+168555	Mashed potatoes
+169264	French fries
+168482	Sweet potato
+170393	Carrot
+170394	Carrot, boiled
+170000	Onion
+170007	Green onion
+169246	Leek
+170499	Shallot
+169230	Garlic
+170457	Tomato
+168409	Cucumber
+170108	Red bell pepper
+170427	Green bell pepper
+169383	Yellow bell pepper
+170106	Chili pepper
+168576	Jalapeño
+169975	White cabbage
+169976	Cabbage, boiled
+169977	Red cabbage
+169979	Napa cabbage
+170390	Bok choy
+170388	Savoy cabbage
+170383	Brussels sprouts
+170379	Broccoli
+169967	Broccoli, boiled
+169986	Cauliflower
+170397	Cauliflower, boiled
+168424	Kohlrabi
+168421	Kale
+169279	Sauerkraut
+169291	Zucchini
+169228	Eggplant
+168448	Pumpkin
+169295	Butternut squash
+169145	Beetroot
+169146	Beetroot, boiled
+169276	Radish
+168451	Daikon radish
+170465	Turnip
+170400	Celery root
+169988	Celery stalks
+170417	Parsnip
+169236	Jerusalem artichoke
+168389	Asparagus
+169961	Green beans
+170016	Green peas, frozen
+170419	Green peas
+169214	Canned sweet corn
+169998	Sweet corn on the cob
+168462	Spinach
+169287	Spinach, frozen
+169247	Romaine lettuce
+169248	Iceberg lettuce
+169249	Leaf lettuce
+169387	Arugula
+168407	Watercress
+169219	Lamb's lettuce
+168564	Radicchio
+172233	Dill
+170416	Parsley
+169997	Cilantro
+169994	Chives
+169385	Fennel
+169205	Artichoke
+169260	Okra
+169251	White mushrooms
+169252	White mushrooms, cooked
+168434	Cremini mushrooms
+169255	Portobello mushrooms
+168580	Oyster mushrooms
+169242	Shiitake mushrooms
+168422	Chanterelles
+169382	Enoki mushrooms
+168558	Pickled cucumbers
+169094	Black olives
+169096	Green olives
+170459	Tomato paste
+170545	Tomato juice
+170063	Vegetable juice
+170491	Carrot juice
+170496	Wakame seaweed
+168458	Nori
+171688	Apple
+167776	Pear
+173944	Banana
+169097	Orange
+169105	Tangerine
+168195	Clementine
+167746	Lemon
+168155	Lime
+167754	Pomelo
+174683	Grapes
+169949	Plum
+171697	Apricot
+169928	Peach
+169914	Nectarine
+171719	Sweet cherries
+173954	Sour cherries
+167762	Strawberries
+167755	Raspberries
+171711	Blueberries
+173946	Blackberries
+173963	Blackcurrants
+173964	Redcurrants
+173030	Gooseberries
+171722	Cranberries
+167765	Watermelon
+169911	Honeydew melon
+169092	Cantaloupe
+168153	Kiwi
+169124	Pineapple
+169910	Mango
+169926	Papaya
+171705	Avocado
+169134	Pomegranate
+173021	Fig
+169941	Persimmon
+168163	Quince
+169086	Lychee
+169108	Passion fruit
+167758	Rhubarb
+168165	Raisins
+168162	Prunes
+173941	Dried apricots
+168191	Dates
+174665	Dried figs
+171723	Dried cranberries
+168849	Banana chips
+169098	Orange juice
+173933	Apple juice
+173042	Grape juice
+169947	Pineapple juice
+168117	Cranberry juice drink
+171695	Applesauce
+168181	Canned peaches
+171413	Olive oil
+171025	Sunflower oil
+172336	Canola oil
+171412	Coconut oil
+171016	Sesame oil
+167702	Flaxseed oil
+171401	Lard
+172346	Margarine
+171009	Mayonnaise
+168556	Ketchup
+172234	Mustard
+174278	Soy sauce
+174527	Hot sauce
+173469	Apple cider vinegar
+172237	Distilled vinegar
+172241	Balsamic vinegar
+173472	Horseradish
+171579	Pesto
+171192	Pasta sauce
+171828	Barbecue sauce
+174524	Salsa
+169655	Sugar
+168833	Brown sugar
+169656	Powdered sugar
+169640	Honey
+169661	Maple syrup
+169641	Jam
+170273	Dark chocolate 70-85%
+170272	Dark chocolate 60-69%
+167587	Milk chocolate
+167571	White chocolate
+169593	Cocoa powder
+167995	Marshmallows
+167996	Halva
+167990	Hard candy
+167989	Fruit jellies
+168778	Chocolate pudding
+169599	Gelatin
+167542	Granola bar
+171646	Granola
+169677	Potato chips
+167558	Tortilla chips
+167555	Pretzels
+167959	Popcorn
+167561	Trail mix
+173647	Water
+171890	Black coffee
+171891	Espresso
+171893	Instant coffee, powder
+173227	Black tea
+171917	Green tea
+174852	Cola
+173205	Lemonade
+171869	Tonic water
+173210	Energy drink
+174832	Almond milk
+173180	Whey protein
+173177	Whey protein isolate
+168746	Beer
+168749	Light beer
+173190	Dry red wine
+174837	Dry white wine
+171908	Rosé wine
+173176	Dessert wine
+174815	Vodka
+173468	Salt
+170931	Ground black pepper
+171320	Cinnamon
+171329	Ground paprika
+172231	Turmeric
+170926	Ground ginger
+175043	Dry yeast
+172803	Baking powder
+ref:pelmeni	Pelmeni (meat dumplings)
+170317	Cheese pizza
+173333	Lasagna
+172111	Chicken nuggets
+172884	Homemade chicken broth
+172883	Homemade beef broth
+169269	Potato salad
