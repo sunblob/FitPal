@@ -112,6 +112,8 @@ export class WorkoutsService {
   private async hydrate(row: WorkoutPlan): Promise<WorkoutPlanDto> {
     const ids = row.plan.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
     const byId = await this.exercises.findByIds([...new Set(ids)]);
+    // Пока пользователь смотрит план, переводим технику упражнений, у которых её ещё нет на русском.
+    this.exercises.prefetchInstructions([...byId.values()]);
     return {
       ...this.summary(row),
       params: row.params,

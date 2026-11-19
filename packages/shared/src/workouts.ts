@@ -152,6 +152,8 @@ export interface ExerciseDto {
   images: string[];
   /** Инструкции на русском, если уже переведены, иначе на английском. */
   instructions: string[];
+  /** Язык `instructions`: 'en', пока русский перевод ещё не готов. */
+  instructionsLang: 'ru' | 'en';
   youtubeUrl: string;
 }
 

@@ -159,14 +159,46 @@ export class ExercisesService {
     return new Map(rows.map((r) => [r.id, r]));
   }
 
-  /** Карточка упражнения. При первом открытии переводит инструкцию на русский и кэширует её. */
+  /** Переводы инструкций, которые уже идут: карточка и фоновый прогрев не дублируют запрос. */
+  private readonly inflight = new Map<string, Promise<Exercise>>();
+
+  /** Карточка упражнения. Если инструкции ещё нет на русском, переводит её и кэширует. */
   async getDetails(id: string): Promise<ExerciseDto> {
     const [row] = await this.db.select().from(exercises).where(eq(exercises.id, id));
     if (!row) throw new NotFoundException();
-    if (row.instructionsRu || !this.claude.enabled || row.instructionsEn.length === 0) {
-      return this.toDto(row);
-    }
+    return this.toDto(await this.ensureInstructionsRu(row));
+  }
 
+  /**
+   * Переводит инструкции упражнений плана в фоне, чтобы карточка открывалась сразу на русском.
+   * Не бросает ошибок: если перевод не удался, карточка попробует ещё раз при открытии.
+   */
+  prefetchInstructions(rows: Exercise[], concurrency = 4): void {
+    const queue = rows.filter((r) => this.needsTranslation(r));
+    if (queue.length === 0) return;
+    const worker = async () => {
+      for (let row = queue.shift(); row; row = queue.shift()) {
+        await this.ensureInstructionsRu(row);
+      }
+    };
+    void Promise.all(Array.from({ length: Math.min(concurrency, queue.length) }, worker));
+  }
+
+  private needsTranslation(row: Exercise): boolean {
+    return !row.instructionsRu && this.claude.enabled && row.instructionsEn.length > 0;
+  }
+
+  /** Возвращает строку с русской инструкцией, если её удалось получить, иначе исходную. */
+  private ensureInstructionsRu(row: Exercise): Promise<Exercise> {
+    if (!this.needsTranslation(row)) return Promise.resolve(row);
+    const running = this.inflight.get(row.id);
+    if (running) return running;
+    const task = this.translateInstructions(row).finally(() => this.inflight.delete(row.id));
+    this.inflight.set(row.id, task);
+    return task;
+  }
+
+  private async translateInstructions(row: Exercise): Promise<Exercise> {
     try {
       const { instructions } = await this.claude.parse({
         schema: instructionsTranslationSchema,
@@ -180,12 +212,12 @@ export class ExercisesService {
       const [updated] = await this.db
         .update(exercises)
         .set({ instructionsRu: instructions })
-        .where(eq(exercises.id, id))
+        .where(eq(exercises.id, row.id))
         .returning();
-      return this.toDto(updated ?? row);
+      return updated ?? row;
     } catch (e) {
-      this.logger.warn(`Не удалось перевести инструкцию ${id}: ${String(e)}`);
-      return this.toDto(row);
+      this.logger.warn(`Не удалось перевести инструкцию ${row.id}: ${String(e)}`);
+      return row;
     }
   }
 
@@ -203,6 +235,7 @@ export class ExercisesService {
       secondaryMuscles: row.secondaryMuscles,
       images: row.images.map((p) => new URL(p, this.env.EXERCISE_MEDIA_BASE_URL).toString()),
       instructions: row.instructionsRu ?? row.instructionsEn,
+      instructionsLang: row.instructionsRu ? 'ru' : 'en',
       youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
     };
   }

@@ -20,7 +20,18 @@ type View =
   | { kind: 'form' }
   | { kind: 'generating' }
   | { kind: 'plan'; plan: WorkoutPlanDto }
-  | { kind: 'exercise'; exercise: ExerciseDto; back: View };
+  | {
+      kind: 'exercise';
+      exercise: ExerciseDto;
+      /** Подходы, повторы и отдых из плана, если карточку открыли из плана. */
+      dose?: ExerciseDose;
+      /** Ждём русскую инструкцию с сервера. */
+      translating: boolean;
+      back: View;
+    };
+
+type PlanItem = WorkoutPlanDto['days'][number]['exercises'][number];
+type ExerciseDose = Omit<PlanItem, 'exercise'>;
 
 const muscleLabel = (m: string) => MUSCLE_LABELS_RU[m as Muscle] ?? m;
 
@@ -94,16 +105,19 @@ export function WorkoutsPage() {
       setView({ kind: 'list' });
     });
 
-  // Детали подгружаем отдельно: там русская инструкция, которую сервер переводит при первом открытии.
-  const openExercise = (exercise: ExerciseDto, back: View) => {
-    setView({ kind: 'exercise', exercise, back });
-    void api<ExerciseDto>(`/exercises/${encodeURIComponent(exercise.id)}`).then(
-      (full) =>
-        setView((v) =>
-          v.kind === 'exercise' && v.exercise.id === full.id ? { ...v, exercise: full } : v,
-        ),
-      () => undefined,
-    );
+  // Если инструкции ещё нет на русском, сервер переводит её по запросу. Пока ждём,
+  // показываем заглушку, а не английский текст, который через секунду сменится русским.
+  const openExercise = ({ exercise, ...dose }: PlanItem, back: View) => {
+    const translating = exercise.instructionsLang === 'en';
+    setView({ kind: 'exercise', exercise, dose, translating, back });
+    if (!translating) return;
+    const done = (full?: ExerciseDto) =>
+      setView((v) =>
+        v.kind === 'exercise' && v.exercise.id === exercise.id
+          ? { ...v, exercise: full ?? v.exercise, translating: false }
+          : v,
+      );
+    void api<ExerciseDto>(`/exercises/${encodeURIComponent(exercise.id)}`).then(done, () => done());
   };
 
   const errorBox = error && <p className="error">{error}</p>;
@@ -136,6 +150,16 @@ export function WorkoutsPage() {
           {ex.name !== ex.nameEn && <div className="muted small">{ex.nameEn}</div>}
         </div>
         <ExerciseAnimation images={ex.images} alt={ex.name} />
+        {view.dose && (
+          <section className="wk-dose">
+            <div className="wk-facts">
+              <Fact value={String(view.dose.sets)} label="подходов" />
+              <Fact value={view.dose.reps} label="повторений" />
+              <Fact value={`${view.dose.restSec} с`} label="отдых" />
+            </div>
+            {view.dose.notes && <p className="wk-dose-notes">{view.dose.notes}</p>}
+          </section>
+        )}
         <div className="chips">
           {ex.primaryMuscles.map((m) => (
             <span key={m} className="tag tag-accent">
@@ -148,15 +172,26 @@ export function WorkoutsPage() {
             </span>
           ))}
         </div>
-        {ex.instructions.length > 0 && (
-          <section className="card">
+        {view.translating ? (
+          <section className="card" aria-busy="true">
             <div className="card-title">Как выполнять</div>
-            <ol className="wk-steps">
-              {ex.instructions.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
+            <div className="wk-steps-skeleton" aria-label="Загружаем технику">
+              <span />
+              <span />
+              <span />
+            </div>
           </section>
+        ) : (
+          ex.instructions.length > 0 && (
+            <section className="card">
+              <div className="card-title">Как выполнять</div>
+              <ol className="wk-steps">
+                {ex.instructions.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </section>
+          )
         )}
         <a className="wk-yt" href={ex.youtubeUrl} target="_blank" rel="noreferrer">
           ▶ Видео с техникой
@@ -203,11 +238,7 @@ export function WorkoutsPage() {
             </div>
             <div className="wk-ex-list">
               {day.exercises.map((item, ei) => (
-                <button
-                  className="wk-ex"
-                  key={ei}
-                  onClick={() => openExercise(item.exercise, view)}
-                >
+                <button className="wk-ex" key={ei} onClick={() => openExercise(item, view)}>
                   <ExerciseAnimation
                     images={item.exercise.images}
                     alt={item.exercise.name}
