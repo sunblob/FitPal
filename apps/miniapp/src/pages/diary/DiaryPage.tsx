@@ -7,10 +7,38 @@ import {
   type DiaryDayDto,
   type MealType,
 } from '@fitpal/shared';
+import { CalorieRing } from '../../components/CalorieRing';
+import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { api, del, type Me } from '../../lib/api';
 import { formatDateRu } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
+
+const MEAL_ICONS: Record<MealType, string> = {
+  breakfast: '🥣',
+  lunch: '🍲',
+  dinner: '🥗',
+  snack: '🍏',
+};
+
+const weekday = (date: string) => {
+  const name = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'long' });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+function Stat(props: { icon: IconName; label: string; value: number | undefined }) {
+  return (
+    <div className="stat">
+      <span className="stat-icon">
+        <Icon name={props.icon} size={18} />
+      </span>
+      <div>
+        <div className="muted small">{props.label}</div>
+        <div className="stat-value">{props.value ?? '—'}</div>
+      </div>
+    </div>
+  );
+}
 
 export function DiaryPage({ me }: { me: Me }) {
   const today = todayIn(me.timezone);
@@ -32,47 +60,55 @@ export function DiaryPage({ me }: { me: Me }) {
 
   const target = day?.target;
   const eaten = day?.totals.kcal ?? 0;
-  const left = target ? target.kcal - eaten : null;
 
   return (
     <main className="screen">
-      <div className="date-nav">
+      <header className="date-nav">
         <button
-          className="ghost"
+          className="icon-btn"
           onClick={() => setDate(addDays(date, -1))}
           aria-label="Предыдущий день"
         >
-          ‹
+          <Icon name="back" />
         </button>
-        <strong>{date === today ? 'Сегодня' : formatDateRu(date)}</strong>
+        <div className="date-title">
+          <h1>
+            {date === today ? 'Сегодня' : date === addDays(today, -1) ? 'Вчера' : weekday(date)}
+          </h1>
+          <div className="muted small">{formatDateRu(date)}</div>
+        </div>
         <button
-          className="ghost"
+          className="icon-btn"
           disabled={date >= today}
           onClick={() => setDate(addDays(date, 1))}
           aria-label="Следующий день"
         >
-          ›
+          <Icon name="forward" />
         </button>
-      </div>
+      </header>
 
-      <section className="card">
-        <div className="summary">
-          <div>
-            <div className="big">{Math.round(eaten)}</div>
-            <div className="muted">съедено</div>
+      <section className="card hero">
+        <div className="hero-top">
+          <CalorieRing eaten={eaten} target={target?.kcal ?? null} />
+          <div className="hero-stats">
+            <Stat icon="target" label="Норма" value={target?.kcal} />
+            <Stat icon="flame" label="Съедено" value={Math.round(eaten)} />
           </div>
-          {left != null && (
-            <div className="right">
-              <div className={left < 0 ? 'big over-text' : 'big'}>{Math.abs(Math.round(left))}</div>
-              <div className="muted">{left < 0 ? 'сверх нормы' : 'осталось'}</div>
-            </div>
-          )}
         </div>
-        <MacroBar label="Калории" value={eaten} target={target?.kcal} unit="ккал" />
         <div className="macros">
-          <MacroBar label="Белки" value={day?.totals.protein ?? 0} target={target?.protein} />
-          <MacroBar label="Жиры" value={day?.totals.fat ?? 0} target={target?.fat} />
-          <MacroBar label="Углеводы" value={day?.totals.carbs ?? 0} target={target?.carbs} />
+          <MacroBar
+            kind="protein"
+            label="Белки"
+            value={day?.totals.protein ?? 0}
+            target={target?.protein}
+          />
+          <MacroBar kind="fat" label="Жиры" value={day?.totals.fat ?? 0} target={target?.fat} />
+          <MacroBar
+            kind="carbs"
+            label="Углеводы"
+            value={day?.totals.carbs ?? 0}
+            target={target?.carbs}
+          />
         </div>
       </section>
 
@@ -80,32 +116,50 @@ export function DiaryPage({ me }: { me: Me }) {
 
       {MEAL_TYPES.map((meal) => {
         const m = day?.meals[meal];
+        const entries = m?.entries ?? [];
         return (
           <section key={meal} className="card meal">
             <div className="meal-head">
-              <strong>{MEAL_LABELS_RU[meal]}</strong>
-              <span className="muted">{Math.round(m?.totals.kcal ?? 0)} ккал</span>
-            </div>
-            {m?.entries.map((e) => (
-              <div key={e.id} className="entry">
-                <div>
-                  <div>{e.name}</div>
-                  <div className="muted small">
-                    {e.grams} г · Б {e.nutrients.protein} · Ж {e.nutrients.fat} · У{' '}
-                    {e.nutrients.carbs}
-                  </div>
-                </div>
-                <div className="entry-right">
-                  <span>{Math.round(e.nutrients.kcal)}</span>
-                  <button className="icon" onClick={() => remove(e.id)} aria-label="Удалить">
-                    ×
-                  </button>
-                </div>
+              <span className={`meal-icon meal-icon-${meal}`} aria-hidden="true">
+                {MEAL_ICONS[meal]}
+              </span>
+              <div className="meal-title">
+                <strong>{MEAL_LABELS_RU[meal]}</strong>
+                <span className="muted small">
+                  {entries.length > 0 ? `${Math.round(m?.totals.kcal ?? 0)} ккал` : 'Пока пусто'}
+                </span>
               </div>
-            ))}
-            <button className="ghost add" onClick={() => setAddingTo(meal)}>
-              + Добавить
-            </button>
+              <button
+                className="add-btn"
+                onClick={() => setAddingTo(meal)}
+                aria-label={`Добавить в ${MEAL_LABELS_RU[meal].toLowerCase()}`}
+              >
+                <Icon name="plus" size={20} />
+              </button>
+            </div>
+            {entries.length > 0 && (
+              <ul className="entries">
+                {entries.map((e) => (
+                  <li key={e.id} className="entry">
+                    <div className="entry-main">
+                      <div className="entry-name">{e.name}</div>
+                      <div className="muted small">
+                        {e.grams} г · Б {Math.round(e.nutrients.protein)} · Ж{' '}
+                        {Math.round(e.nutrients.fat)} · У {Math.round(e.nutrients.carbs)}
+                      </div>
+                    </div>
+                    <span className="entry-kcal">{Math.round(e.nutrients.kcal)}</span>
+                    <button
+                      className="icon-btn small-btn"
+                      onClick={() => remove(e.id)}
+                      aria-label="Удалить"
+                    >
+                      <Icon name="close" size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         );
       })}

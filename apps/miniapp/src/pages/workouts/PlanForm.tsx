@@ -74,10 +74,13 @@ export function PlanForm({
         });
       }}
     >
-      <h1>Новый план</h1>
+      <div>
+        <h1>Новый план</h1>
+        <p className="muted">Расскажи о цели и возможностях, остальное подберём сами.</p>
+      </div>
 
       <section className="card wk-field">
-        <div className="muted">Цель</div>
+        <div className="card-title">Цель</div>
         <Chips
           options={workoutGoalSchema.options}
           labels={WORKOUT_GOAL_LABELS_RU}
@@ -87,7 +90,7 @@ export function PlanForm({
       </section>
 
       <section className="card wk-field">
-        <div className="muted">Уровень</div>
+        <div className="card-title">Уровень</div>
         <Chips
           options={exerciseLevelSchema.options}
           labels={LEVEL_LABELS_RU}
@@ -123,7 +126,7 @@ export function PlanForm({
       </section>
 
       <section className="card wk-field">
-        <div className="muted">Какие мышцы качаем</div>
+        <div className="card-title">Какие мышцы качаем</div>
         <Chips
           options={muscleSchema.options}
           labels={MUSCLE_LABELS_RU}
@@ -134,7 +137,7 @@ export function PlanForm({
 
       <section className="card wk-field">
         <div className="wk-row">
-          <span className="muted">Инвентарь</span>
+          <span className="card-title">Инвентарь</span>
           <span className="wk-presets">
             <button type="button" className="wk-link" onClick={() => setEquipment(GYM)}>
               Зал
@@ -156,7 +159,7 @@ export function PlanForm({
       </section>
 
       <section className="card wk-field">
-        <div className="muted">Пожелания и ограничения</div>
+        <div className="card-title">Пожелания и ограничения</div>
         <textarea
           className="wk-textarea"
           rows={3}
@@ -167,13 +170,11 @@ export function PlanForm({
         />
       </section>
 
-      <button type="submit" disabled={busy || muscles.length === 0}>
-        {busy
-          ? 'Claude составляет план… до минуты'
-          : muscles.length === 0
-            ? 'Выбери хотя бы одну мышцу'
-            : 'Составить план'}
-      </button>
+      <div className="wk-submit">
+        <button type="submit" className="primary" disabled={busy || muscles.length === 0}>
+          {muscles.length === 0 ? 'Выбери хотя бы одну мышцу' : 'Составить план'}
+        </button>
+      </div>
     </form>
   );
 }

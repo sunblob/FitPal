@@ -73,6 +73,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
         <p className="muted">По этим данным я рассчитаю твою дневную норму калорий и план веса.</p>
       )}
 
+      <div className="section-label">О тебе</div>
       <section className="card form">
         <div className="segmented">
           {(['male', 'female'] as const).map((s) => (
@@ -125,6 +126,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
         </label>
       </section>
 
+      <div className="section-label">Цель</div>
       <section className="card form">
         <div className="segmented">
           {goalSchema.options.map((g) => (
@@ -170,14 +172,19 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
       </section>
 
       {target && (
-        <section className="card">
-          <div className="muted">Рекомендуемая норма в день</div>
-          <div className="big">{target.kcal} ккал</div>
-          <div className="muted">
-            Белки {target.protein} г · Жиры {target.fat} г · Углеводы {target.carbs} г
+        <section className="card hero norm">
+          <div className="muted small">Твоя норма в день</div>
+          <div className="display">
+            {target.kcal}
+            <span className="unit"> ккал</span>
+          </div>
+          <div className="macro-pills">
+            <span className="macro-pill macro-protein">Белки {target.protein} г</span>
+            <span className="macro-pill macro-fat">Жиры {target.fat} г</span>
+            <span className="macro-pill macro-carbs">Углеводы {target.carbs} г</span>
           </div>
           {plan && !wrongDirection && (
-            <p className="plan-line">
+            <p className="plan-line muted">
               С {plan.startWeightKg} до {plan.targetWeightKg} кг примерно за {plan.weeks} нед., к{' '}
               {formatDateRu(plan.etaDate)}
             </p>

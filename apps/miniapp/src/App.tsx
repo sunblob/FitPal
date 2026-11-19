@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Icon, type IconName } from './components/Icon';
 import { api, type Me } from './lib/api';
 import { DiaryPage } from './pages/diary/DiaryPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
@@ -6,11 +7,11 @@ import { WeightPage } from './pages/weight/WeightPage';
 import { WorkoutsPage } from './pages/workouts/WorkoutsPage';
 
 const TABS = [
-  { id: 'diary', label: 'Дневник' },
-  { id: 'weight', label: 'Вес' },
-  { id: 'workouts', label: 'Тренировки' },
-  { id: 'profile', label: 'Профиль' },
-] as const;
+  { id: 'diary', label: 'Дневник', icon: 'diary' },
+  { id: 'weight', label: 'Вес', icon: 'scale' },
+  { id: 'workouts', label: 'Тренировки', icon: 'dumbbell' },
+  { id: 'profile', label: 'Профиль', icon: 'user' },
+] as const satisfies ReadonlyArray<{ id: string; label: string; icon: IconName }>;
 type Tab = (typeof TABS)[number]['id'];
 
 export function App() {
@@ -31,7 +32,7 @@ export function App() {
       </main>
     );
   }
-  if (!me) return <main className="screen muted">Загрузка…</main>;
+  if (!me) return <main className="screen loading muted">Загрузка…</main>;
 
   // Пока нет нормы калорий, сначала просим заполнить профиль
   if (me.targetKcal == null) {
@@ -52,14 +53,19 @@ export function App() {
           }}
         />
       )}
-      <nav className="wk-tabs" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
+      <nav className="tabbar" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={tab === t.id ? 'wk-tab-on' : ''}
-            onClick={() => setTab(t.id)}
+            className={tab === t.id ? 'tab tab-on' : 'tab'}
+            aria-current={tab === t.id ? 'page' : undefined}
+            onClick={() => {
+              setTab(t.id);
+              window.scrollTo(0, 0);
+            }}
           >
-            {t.label}
+            <Icon name={t.icon} />
+            <span>{t.label}</span>
           </button>
         ))}
       </nav>

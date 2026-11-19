@@ -9,6 +9,7 @@ import {
   type Nutrients,
   type RecognizedFood,
 } from '@fitpal/shared';
+import { Icon } from '../../components/Icon';
 import { PhotoRecognize } from '../../components/PhotoRecognize';
 import { api, post } from '../../lib/api';
 
@@ -25,6 +26,18 @@ type Mode =
   | { kind: 'portion'; food: FoodDto }
   | { kind: 'manual' }
   | { kind: 'photo' };
+
+const SHEET_SUBTITLES: Record<Mode['kind'], string> = {
+  search: 'Добавить еду',
+  scan: 'Сканер штрихкода',
+  lookup: 'Сканер штрихкода',
+  notFound: 'Сканер штрихкода',
+  portion: 'Порция',
+  manual: 'Свой продукт',
+  photo: 'Распознать по фото',
+};
+
+const PORTIONS = [50, 100, 150, 200, 300];
 
 interface Props {
   meal: MealType;
@@ -90,12 +103,16 @@ export function AddFoodSheet(props: Props) {
     <div className="sheet">
       <div className="sheet-head">
         <button
-          className="ghost"
+          className="icon-btn"
           onClick={mode.kind === 'search' ? props.onClose : () => setMode({ kind: 'search' })}
+          aria-label={mode.kind === 'search' ? 'Закрыть' : 'Назад'}
         >
-          {mode.kind === 'search' ? 'Закрыть' : '‹ Назад'}
+          <Icon name={mode.kind === 'search' ? 'close' : 'back'} />
         </button>
-        <strong>{MEAL_LABELS_RU[props.meal]}</strong>
+        <div className="sheet-title">
+          <strong>{MEAL_LABELS_RU[props.meal]}</strong>
+          <span className="muted small">{SHEET_SUBTITLES[mode.kind]}</span>
+        </div>
         <span />
       </div>
       {error && <pre className="error">{error}</pre>}
@@ -121,11 +138,21 @@ export function AddFoodSheet(props: Props) {
         />
       )}
       {mode.kind === 'scan' && (
-        <Suspense fallback={<p className="muted">Запускаю камеру…</p>}>
+        <Suspense
+          fallback={
+            <div className="sheet-body">
+              <p className="muted">Запускаю камеру…</p>
+            </div>
+          }
+        >
           <BarcodeScanner onDetected={lookup} />
         </Suspense>
       )}
-      {mode.kind === 'lookup' && <p className="muted">Ищу продукт {mode.code}…</p>}
+      {mode.kind === 'lookup' && (
+        <div className="sheet-body">
+          <p className="muted">Ищу продукт {mode.code}…</p>
+        </div>
+      )}
       {mode.kind === 'notFound' && (
         <div className="sheet-body">
           <p>
@@ -174,20 +201,33 @@ function FoodSearch(props: {
 
   return (
     <div className="sheet-body">
-      <input
-        autoFocus
-        placeholder="Поиск продукта"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
+      <div className="search">
+        <Icon name="search" size={18} />
+        <input
+          autoFocus
+          type="search"
+          placeholder="Поиск продукта"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
       <div className="quick-actions">
-        <button className="ghost add" onClick={props.onPhoto}>
+        <button className="tile" onClick={props.onPhoto}>
+          <span className="tile-icon tile-photo">
+            <Icon name="camera" />
+          </span>
           По фото
         </button>
-        <button className="ghost add" onClick={props.onScan}>
+        <button className="tile" onClick={props.onScan}>
+          <span className="tile-icon tile-barcode">
+            <Icon name="barcode" />
+          </span>
           Штрихкод
         </button>
-        <button className="ghost add" onClick={props.onManual}>
+        <button className="tile" onClick={props.onManual}>
+          <span className="tile-icon tile-manual">
+            <Icon name="pencil" />
+          </span>
           Вручную
         </button>
       </div>
@@ -199,16 +239,28 @@ function FoodSearch(props: {
             : 'Здесь появятся продукты, которые ты добавляешь чаще всего.'}
         </p>
       )}
-      {!q && items && items.length > 0 && <div className="muted small">Часто добавляешь</div>}
-      {items?.map((f) => (
-        <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
-          <span>
-            {f.name}
-            {f.brand && <span className="muted"> · {f.brand}</span>}
-          </span>
-          <span className="muted nowrap">{Math.round(f.per100g.kcal)} ккал/100 г</span>
-        </button>
-      ))}
+      {!loading && items && items.length > 0 && (
+        <div className="section-label">{q ? 'Результаты' : 'Часто добавляешь'}</div>
+      )}
+      {items && items.length > 0 && (
+        <div className="list">
+          {items.map((f) => (
+            <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
+              <span className="food-name">
+                {f.name}
+                {f.brand && <span className="muted small">{f.brand}</span>}
+              </span>
+              <span className="food-kcal">
+                <b>{Math.round(f.per100g.kcal)}</b>
+                <span className="muted small">ккал / 100 г</span>
+              </span>
+              <span className="food-add" aria-hidden="true">
+                <Icon name="plus" size={18} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -221,17 +273,36 @@ function Portion(props: { food: FoodDto; onAdd: (grams: number) => void }) {
 
   return (
     <div className="sheet-body">
-      <h2>{props.food.name}</h2>
-      {props.food.brand && <div className="muted">{props.food.brand}</div>}
-      <label>
-        Вес порции, г
-        <input
-          autoFocus
-          inputMode="decimal"
-          value={grams}
-          onChange={(e) => setGrams(e.target.value)}
-        />
-      </label>
+      <div>
+        <h2>{props.food.name}</h2>
+        <div className="muted small">
+          {props.food.brand ? `${props.food.brand} · ` : ''}
+          {Math.round(props.food.per100g.kcal)} ккал на 100 г
+        </div>
+      </div>
+      <section className="card form">
+        <label>
+          Вес порции, г
+          <input
+            className="input-big"
+            autoFocus
+            inputMode="decimal"
+            value={grams}
+            onChange={(e) => setGrams(e.target.value)}
+          />
+        </label>
+        <div className="chips chips-portion">
+          {PORTIONS.map((p) => (
+            <button
+              key={p}
+              className={g === p ? 'chip chip-on' : 'chip'}
+              onClick={() => setGrams(String(p))}
+            >
+              {p} г
+            </button>
+          ))}
+        </div>
+      </section>
       {n && <NutrientsLine n={n} />}
       <button className="primary" disabled={!valid} onClick={() => props.onAdd(g)}>
         Добавить
@@ -285,26 +356,30 @@ function ManualFood(props: {
 
   return (
     <div className="sheet-body">
-      <label>
-        Название
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Например, сырники"
-        />
-      </label>
-      <div className="label">На 100 г</div>
-      <div className="row4">
-        {field('kcal', 'Ккал')}
-        {field('protein', 'Белки')}
-        {field('fat', 'Жиры')}
-        {field('carbs', 'Углев.')}
-      </div>
-      <label>
-        Вес порции, г
-        <input inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} />
-      </label>
+      <section className="card form">
+        <label>
+          Название
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Например, сырники"
+          />
+        </label>
+        <div>
+          <div className="label">На 100 г</div>
+          <div className="row4">
+            {field('kcal', 'Ккал')}
+            {field('protein', 'Белки')}
+            {field('fat', 'Жиры')}
+            {field('carbs', 'Углев.')}
+          </div>
+        </div>
+        <label>
+          Вес порции, г
+          <input inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} />
+        </label>
+      </section>
       {valid && per100g.success && <NutrientsLine n={scaleNutrients(per100g.data, g)} />}
       <label className="check">
         <input type="checkbox" checked={saveFood} onChange={(e) => setSaveFood(e.target.checked)} />
@@ -319,10 +394,22 @@ function ManualFood(props: {
 
 function NutrientsLine({ n }: { n: Nutrients }) {
   return (
-    <div className="card">
-      <div className="big">{n.kcal} ккал</div>
-      <div className="muted">
-        Б {n.protein} г · Ж {n.fat} г · У {n.carbs} г
+    <div className="nutrients">
+      <div className="nutrient nutrient-kcal">
+        <b>{Math.round(n.kcal)}</b>
+        <span>ккал</span>
+      </div>
+      <div className="nutrient nutrient-protein">
+        <b>{n.protein}</b>
+        <span>белки, г</span>
+      </div>
+      <div className="nutrient nutrient-fat">
+        <b>{n.fat}</b>
+        <span>жиры, г</span>
+      </div>
+      <div className="nutrient nutrient-carbs">
+        <b>{n.carbs}</b>
+        <span>углев., г</span>
       </div>
     </div>
   );
