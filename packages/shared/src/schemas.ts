@@ -49,6 +49,17 @@ export const nutrientsSchema = z.object({
 });
 export type Nutrients = z.infer<typeof nutrientsSchema>;
 
+/**
+ * КБЖУ плюс клетчатка и сахар. Они известны не для всех продуктов (есть у Open Food Facts
+ * и у своих продуктов, если их ввели), поэтому null — «нет данных», а не ноль.
+ * Отдельная схема: nutrientsSchema уходит в structured output ИИ и меняться не должна.
+ */
+export const foodNutrientsSchema = nutrientsSchema.extend({
+  fiber: z.number().min(0).nullable().optional(),
+  sugar: z.number().min(0).nullable().optional(),
+});
+export type FoodNutrients = z.infer<typeof foodNutrientsSchema>;
+
 export const foodSourceSchema = z.enum(['manual', 'openfoodfacts', 'builtin', 'ai']);
 export type FoodSource = z.infer<typeof foodSourceSchema>;
 
@@ -59,7 +70,7 @@ export const createDiaryEntrySchema = z.object({
   foodId: z.uuid().optional(),
   name: z.string().min(1).max(200),
   grams: z.number().positive().max(5000),
-  per100g: nutrientsSchema,
+  per100g: foodNutrientsSchema,
   meal: mealTypeSchema,
   eatenAt: z.iso.datetime().optional(),
 });
@@ -109,7 +120,7 @@ export const createFoodSchema = z.object({
   brand: z.string().trim().max(200).optional(),
   /** Штрихкод отсканированного товара: по нему продукт найдётся при следующем скане. */
   barcode: barcodeSchema.optional(),
-  per100g: nutrientsSchema,
+  per100g: foodNutrientsSchema,
 });
 export type CreateFood = z.infer<typeof createFoodSchema>;
 
@@ -128,7 +139,7 @@ export interface FoodDto {
   imageUrl: string | null;
   /** Группа встроенного справочника для иконки: vegetables, dairy… */
   category: string | null;
-  per100g: Nutrients;
+  per100g: FoodNutrients;
 }
 
 export interface DiaryEntryDto {
@@ -138,7 +149,7 @@ export interface DiaryEntryDto {
   meal: MealType;
   grams: number;
   eatenAt: string;
-  nutrients: Nutrients;
+  nutrients: FoodNutrients;
   /** Фото и группа продукта, если запись сделана из базы продуктов. */
   imageUrl: string | null;
   category: string | null;
@@ -151,7 +162,7 @@ export interface RecentFoodDto {
   brand: string | null;
   imageUrl: string | null;
   category: string | null;
-  per100g: Nutrients;
+  per100g: FoodNutrients;
   /** Вес последней порции, его предлагаем по умолчанию. */
   lastGrams: number;
 }
@@ -162,6 +173,10 @@ export interface DiaryDayDto {
   closed: boolean;
   target: Nutrients | null;
   totals: Nutrients;
+  /** Клетчатка и сахар за день по записям, где они известны; null — данных нет ни в одной. */
+  fiberSugar: { fiber: number; sugar: number } | null;
+  /** Калории от шагов, прибавленные к норме (если включено в профиле). */
+  stepsBonusKcal: number;
   meals: Record<MealType, { entries: DiaryEntryDto[]; totals: Nutrients }>;
 }
 

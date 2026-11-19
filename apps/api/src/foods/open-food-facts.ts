@@ -1,4 +1,4 @@
-import type { Nutrients } from '@fitpal/shared';
+import type { FoodNutrients } from '@fitpal/shared';
 
 export interface OffProduct {
   barcode: string;
@@ -8,7 +8,7 @@ export interface OffProduct {
   countries: string[];
   /** Фото товара с CDN Open Food Facts, если есть. */
   imageUrl: string | null;
-  per100g: Nutrients;
+  per100g: FoodNutrients;
 }
 
 type Raw = Record<string, unknown>;
@@ -43,6 +43,7 @@ const str = (v: unknown): string | undefined => {
   return s || undefined;
 };
 const round1 = (n: number) => Math.round(n * 10) / 10;
+const opt = (n: number | undefined) => (n == null ? null : round1(n));
 
 /** Берём только https-картинки с доменов Open Food Facts, чтобы не показывать чужие ссылки. */
 export function offImageUrl(p: Raw): string | null {
@@ -99,6 +100,8 @@ export function parseOffProduct(raw: unknown): OffProduct | null {
       protein: round1(num(n['proteins_100g']) ?? 0),
       fat: round1(num(n['fat_100g']) ?? 0),
       carbs: round1(num(n['carbohydrates_100g']) ?? 0),
+      fiber: opt(num(n['fiber_100g'])),
+      sugar: opt(num(n['sugars_100g'])),
     },
   };
 }

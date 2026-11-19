@@ -18,6 +18,13 @@ export function toFoodDto(food: Food, lang: Language): FoodDto {
     source: food.source,
     imageUrl: food.imageUrl,
     category: food.category,
-    per100g: { kcal: food.kcal, protein: food.protein, fat: food.fat, carbs: food.carbs },
+    per100g: {
+      kcal: food.kcal,
+      protein: food.protein,
+      fat: food.fat,
+      carbs: food.carbs,
+      fiber: food.fiber,
+      sugar: food.sugar,
+    },
   };
 }

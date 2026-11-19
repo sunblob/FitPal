@@ -59,6 +59,9 @@ const ru = {
     reminders: 'Напоминание в боте',
     remindersHint: 'Если к этому времени в дневнике за день ничего нет, бот напомнит записать еду.',
     remindersOff: 'Не напоминать',
+    stepsKcal: 'Прибавлять к норме калории за шаги',
+    stepsKcalHint:
+      'Считаются шаги сверх обычных 5000 в день: обычная ходьба уже учтена в уровне активности.',
     at: (hour: number) => `В ${hour}:00`,
   },
   diary: {
@@ -72,6 +75,8 @@ const ru = {
     empty: 'Пока пусто',
     addTo: (meal: string) => `Добавить в ${meal.toLowerCase()}`,
     editEntry: (name: string) => `Изменить: ${name}`,
+    fiberSugar: (f: number, s: number) => `Клетчатка ${f} г · Сахар ${s} г`,
+    stepsBonus: (kcal: number) => `+${kcal} ккал к норме за шаги`,
     budget: (kcal: number) => `можно ещё ~${kcal} ккал`,
     left: (kcal: number) => `Осталось ${kcal} ккал`,
     over: (kcal: number) => `Сверх нормы ${kcal} ккал`,
@@ -155,6 +160,10 @@ const ru = {
     proteinG: 'белки, г',
     fatG: 'жиры, г',
     carbsG: 'углев., г',
+    fiberOptional: 'Клетчатка, г',
+    sugarOptional: 'Сахар, г',
+    fiberG: (g: number) => `клетчатка ${g} г`,
+    sugarG: (g: number) => `сахар ${g} г`,
   },
   ai: {
     removeItem: 'Убрать',
@@ -351,6 +360,9 @@ const en: Dict = {
     reminders: 'Bot reminder',
     remindersHint: 'If nothing is logged by this time, the bot will remind you to log your food.',
     remindersOff: "Don't remind me",
+    stepsKcal: 'Add calories from steps to my target',
+    stepsKcalHint:
+      'Only steps above the usual 5,000 a day count: everyday walking is already in your activity level.',
     at: (hour) => `At ${hour}:00`,
   },
   diary: {
@@ -364,6 +376,8 @@ const en: Dict = {
     empty: 'Nothing yet',
     addTo: (meal) => `Add to ${meal.toLowerCase()}`,
     editEntry: (name) => `Edit ${name}`,
+    fiberSugar: (f, s) => `Fiber ${f} g · Sugar ${s} g`,
+    stepsBonus: (kcal) => `+${kcal} kcal added for steps`,
     budget: (kcal) => `~${kcal} kcal available`,
     left: (kcal) => `${kcal} kcal left`,
     over: (kcal) => `${kcal} kcal over`,
@@ -447,6 +461,10 @@ const en: Dict = {
     proteinG: 'protein, g',
     fatG: 'fat, g',
     carbsG: 'carbs, g',
+    fiberOptional: 'Fiber, g',
+    sugarOptional: 'Sugar, g',
+    fiberG: (g) => `fiber ${g} g`,
+    sugarG: (g) => `sugar ${g} g`,
   },
   ai: {
     removeItem: 'Remove',

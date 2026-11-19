@@ -1,11 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   MEAL_LABELS,
-  nutrientsSchema,
+  foodNutrientsSchema,
+  scaleExtras,
   scaleNutrients,
   type CreateDiaryEntry,
   type FoodDto,
   type MealType,
+  type FoodNutrients,
   type Nutrients,
   type RecentFoodDto,
   type NutritionLabel,
@@ -44,7 +46,7 @@ interface PortionFood {
   brand: string | null;
   imageUrl: string | null;
   category: string | null;
-  per100g: Nutrients;
+  per100g: FoodNutrients;
 }
 
 const fromFood = (f: FoodDto): PortionFood => ({ ...f, foodId: f.id });
@@ -402,7 +404,7 @@ function Portion(props: {
   const [grams, setGrams] = useState(String(props.initialGrams ?? 100));
   const g = Number(grams);
   const valid = g > 0 && g <= 5000;
-  const n = valid ? scaleNutrients(props.food.per100g, g) : null;
+  const n = valid ? portionOf(props.food.per100g, g) : null;
 
   return (
     <div className="sheet-body">
@@ -471,15 +473,25 @@ function ManualFood(props: {
     error: null,
   });
   const [grams, setGrams] = useState('100');
-  const [per, setPer] = useState({ kcal: '', protein: '', fat: '', carbs: '' });
+  const [per, setPer] = useState({
+    kcal: '',
+    protein: '',
+    fat: '',
+    carbs: '',
+    fiber: '',
+    sugar: '',
+  });
   const [saveFood, setSaveFood] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const per100g = nutrientsSchema.safeParse({
+  const per100g = foodNutrientsSchema.safeParse({
     kcal: Number(per.kcal),
     protein: Number(per.protein || 0),
     fat: Number(per.fat || 0),
     carbs: Number(per.carbs || 0),
+    // Пустое поле — «не знаю», а не ноль
+    fiber: per.fiber === '' ? null : Number(per.fiber),
+    sugar: per.sugar === '' ? null : Number(per.sugar),
   });
   const g = Number(grams);
   const valid = name.trim() !== '' && per.kcal !== '' && per100g.success && g > 0 && g <= 5000;
@@ -513,6 +525,7 @@ function ManualFood(props: {
       if (res.per100g) {
         const s = (n: number) => String(n);
         setPer({
+          ...per,
           kcal: s(res.per100g.kcal),
           protein: s(res.per100g.protein),
           fat: s(res.per100g.fat),
@@ -594,13 +607,17 @@ function ManualFood(props: {
             {field('fat', L.common.fat)}
             {field('carbs', L.add.carbsShort)}
           </div>
+          <div className="row2 extras-row">
+            {field('fiber', L.add.fiberOptional)}
+            {field('sugar', L.add.sugarOptional)}
+          </div>
         </div>
         <label>
           {L.add.portionWeight}
           <input inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} />
         </label>
       </section>
-      {valid && per100g.success && <NutrientsLine n={scaleNutrients(per100g.data, g)} />}
+      {valid && per100g.success && <NutrientsLine n={portionOf(per100g.data, g)} />}
       {barcode ? (
         <p className="muted small">{L.add.barcodeSaveHint}</p>
       ) : (
@@ -620,25 +637,38 @@ function ManualFood(props: {
   );
 }
 
-export function NutrientsLine({ n }: { n: Nutrients }) {
+/** КБЖУ порции вместе с клетчаткой и сахаром, если они известны. */
+const portionOf = (per100g: FoodNutrients, grams: number): FoodNutrients => ({
+  ...scaleNutrients(per100g, grams),
+  ...scaleExtras(per100g, grams),
+});
+
+export function NutrientsLine({ n }: { n: FoodNutrients }) {
+  const extras = [
+    n.fiber != null ? L.add.fiberG(n.fiber) : null,
+    n.sugar != null ? L.add.sugarG(n.sugar) : null,
+  ].filter(Boolean);
   return (
-    <div className="nutrients">
-      <div className="nutrient nutrient-kcal">
-        <b>{Math.round(n.kcal)}</b>
-        <span>{L.common.kcal}</span>
+    <>
+      <div className="nutrients">
+        <div className="nutrient nutrient-kcal">
+          <b>{Math.round(n.kcal)}</b>
+          <span>{L.common.kcal}</span>
+        </div>
+        <div className="nutrient nutrient-protein">
+          <b>{n.protein}</b>
+          <span>{L.add.proteinG}</span>
+        </div>
+        <div className="nutrient nutrient-fat">
+          <b>{n.fat}</b>
+          <span>{L.add.fatG}</span>
+        </div>
+        <div className="nutrient nutrient-carbs">
+          <b>{n.carbs}</b>
+          <span>{L.add.carbsG}</span>
+        </div>
       </div>
-      <div className="nutrient nutrient-protein">
-        <b>{n.protein}</b>
-        <span>{L.add.proteinG}</span>
-      </div>
-      <div className="nutrient nutrient-fat">
-        <b>{n.fat}</b>
-        <span>{L.add.fatG}</span>
-      </div>
-      <div className="nutrient nutrient-carbs">
-        <b>{n.carbs}</b>
-        <span>{L.add.carbsG}</span>
-      </div>
-    </div>
+      {extras.length > 0 && <div className="nutrients-extra muted small">{extras.join(' · ')}</div>}
+    </>
   );
 }

@@ -120,6 +120,8 @@ export class FoodsService implements OnApplicationBootstrap {
           protein: sql`excluded.protein`,
           fat: sql`excluded.fat`,
           carbs: sql`excluded.carbs`,
+          fiber: sql`excluded.fiber`,
+          sugar: sql`excluded.sugar`,
         },
       })
       .returning();
@@ -194,6 +196,7 @@ export class FoodsService implements OnApplicationBootstrap {
       .slice(0, LIMIT)
       .map(({ entry: e, food }) => {
         const per100 = (v: number) => (e.grams > 0 ? round1((v * 100) / e.grams) : 0);
+        const per100opt = (v: number | null) => (v == null ? null : per100(v));
         return {
           foodId: food?.id ?? null,
           name: food ? localizedFoodName(food, lang) : e.name,
@@ -206,6 +209,8 @@ export class FoodsService implements OnApplicationBootstrap {
             protein: per100(e.protein),
             fat: per100(e.fat),
             carbs: per100(e.carbs),
+            fiber: per100opt(e.fiber),
+            sugar: per100opt(e.sugar),
           },
           lastGrams: e.grams,
         };

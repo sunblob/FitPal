@@ -3,6 +3,7 @@ import {
   MEAL_LABELS,
   MEAL_TYPES,
   rescaleNutrients,
+  scaleExtras,
   type DiaryEntryDto,
   type MealType,
   type UpdateDiaryEntry,
@@ -37,7 +38,18 @@ export function EditEntrySheet({ entry, date, onClose, onChanged }: Props) {
 
   const g = Number(grams.replace(',', '.'));
   const valid = g > 0 && g <= 5000 && /^\d{2}:\d{2}$/.test(time);
-  const n = g > 0 ? rescaleNutrients(entry.nutrients, entry.grams, g) : null;
+  const per100 = (v: number | null | undefined) =>
+    v == null || entry.grams <= 0 ? null : (v * 100) / entry.grams;
+  const n =
+    g > 0
+      ? {
+          ...rescaleNutrients(entry.nutrients, entry.grams, g),
+          ...scaleExtras(
+            { fiber: per100(entry.nutrients.fiber), sugar: per100(entry.nutrients.sugar) },
+            g,
+          ),
+        }
+      : null;
 
   const changes: UpdateDiaryEntry = {
     ...(g !== entry.grams ? { grams: g } : {}),

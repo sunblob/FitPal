@@ -5,6 +5,8 @@ import {
   dailyTarget,
   mealBudgets,
   rescaleNutrients,
+  scaleExtras,
+  sumExtras,
   scaleNutrients,
   weightPlan,
 } from './nutrition.js';
@@ -78,4 +80,16 @@ test('mealBudgets never offers more than is left', () => {
 test('mealBudgets gives nothing when the target is reached', () => {
   const b = mealBudgets(1000, { breakfast: 600, lunch: 500, dinner: 0, snack: 0 });
   assert.deepEqual(b, { breakfast: null, lunch: null, dinner: null, snack: null });
+});
+
+test('scaleExtras keeps unknown values as null', () => {
+  assert.deepEqual(scaleExtras({ fiber: 10, sugar: null }, 150), { fiber: 15, sugar: null });
+});
+
+test('sumExtras sums known values and is null without data', () => {
+  assert.deepEqual(sumExtras([{ fiber: 2, sugar: 5 }, { fiber: null, sugar: 1.5 }, {}]), {
+    fiber: 2,
+    sugar: 6.5,
+  });
+  assert.equal(sumExtras([{}, { fiber: null, sugar: null }]), null);
 });

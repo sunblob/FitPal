@@ -20,6 +20,7 @@ test('parses product with kcal and prefers Russian name', () => {
         proteins_100g: 12.6,
         fat_100g: '3.3',
         carbohydrates_100g: 62.14,
+        fiber_100g: 10.04,
       },
     }),
     {
@@ -28,7 +29,7 @@ test('parses product with kcal and prefers Russian name', () => {
       brand: 'Мистраль',
       countries: [],
       imageUrl: null,
-      per100g: { kcal: 343, protein: 12.6, fat: 3.3, carbs: 62.1 },
+      per100g: { kcal: 343, protein: 12.6, fat: 3.3, carbs: 62.1, fiber: 10, sugar: null },
     },
   );
 });

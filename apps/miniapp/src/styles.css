@@ -374,6 +374,29 @@ label.check input {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.row2 {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.extras-row {
+  margin-top: 8px;
+}
+
+.nutrients-extra {
+  margin-top: -6px;
+  text-align: center;
+}
+
+.day-extra {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 12px;
+}
+
 .row4 {
   grid-template-columns: repeat(4, 1fr);
 }

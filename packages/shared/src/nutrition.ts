@@ -3,6 +3,7 @@ import {
   type ActivityLevel,
   type Goal,
   type MealType,
+  type FoodNutrients,
   type Nutrients,
   type Profile,
 } from './schemas.js';
@@ -104,6 +105,29 @@ export function mealBudgets(
         : null,
     ]),
   ) as Record<MealType, number | null>;
+}
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** Клетчатка и сахар порции; null остаётся null («нет данных»). */
+export function scaleExtras(
+  per100g: Pick<FoodNutrients, 'fiber' | 'sugar'>,
+  grams: number,
+): { fiber: number | null; sugar: number | null } {
+  const scale = (v: number | null | undefined) => (v == null ? null : round1((v * grams) / 100));
+  return { fiber: scale(per100g.fiber), sugar: scale(per100g.sugar) };
+}
+
+/** Сумма клетчатки и сахара по записям, где они известны. null, если данных нет ни в одной. */
+export function sumExtras(
+  items: Pick<FoodNutrients, 'fiber' | 'sugar'>[],
+): { fiber: number; sugar: number } | null {
+  const known = items.filter((n) => n.fiber != null || n.sugar != null);
+  if (known.length === 0) return null;
+  return {
+    fiber: round1(known.reduce((s, n) => s + (n.fiber ?? 0), 0)),
+    sugar: round1(known.reduce((s, n) => s + (n.sugar ?? 0), 0)),
+  };
 }
 
 export function sumNutrients(items: Nutrients[]): Nutrients {
