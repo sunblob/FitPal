@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GOAL_LABELS, addDays, todayIn, weightPlan } from '@fitpal/shared';
-import { getLanguage, L } from '../../i18n';
+import { GOAL_LABELS, addDays, lowestWithin, todayIn, weightPlan } from '@fitpal/shared';
+import { getLanguage, L, locale } from '../../i18n';
 import { api, post, type Me, type WeightLogDto } from '../../lib/api';
 import { formatDate, profileFromMe } from '../../lib/profile';
 import { StepsWeek } from './StepsWeek';
@@ -8,6 +8,9 @@ import { WeekCard } from './WeekCard';
 import { WeightChart } from './WeightChart';
 
 const RANGES = [30, 90, 365];
+
+const shortDate = (date: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });
 
 export function WeightPage(props: { me: Me; onChanged: () => void }) {
   const { me } = props;
@@ -45,6 +48,7 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
   const last = logs[logs.length - 1];
   const change = first && last ? Math.round((last.weightKg - first.weightKg) * 10) / 10 : 0;
   const loggedToday = last?.date === today;
+  const low = lowestWithin(logs, today);
 
   // Прогресс к цели от первого взвешивания в выбранном периоде
   const progress =
@@ -75,10 +79,10 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
             {current ?? '—'}
             <span className="unit"> {L.common.kg}</span>
           </div>
-          {logs.length > 1 && (
+          {logs.length > 1 && first && (
             <span className={change <= 0 ? 'pill pill-good' : 'pill'}>
               {change > 0 ? '+' : change < 0 ? '−' : ''}
-              {Math.abs(change)} {L.weight.forPeriod}
+              {Math.abs(change)} {L.weight.since(shortDate(first.date))}
             </span>
           )}
         </div>
@@ -91,6 +95,11 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
                 : goalLabels[me.goal]}
             </div>
             {toGo != null && <div className="muted small">{L.weight.toGo(toGo)}</div>}
+          </div>
+        )}
+        {low && logs.length > 1 && (
+          <div className="weight-low muted small">
+            {L.weight.low10(low.weightKg, shortDate(low.date))}
           </div>
         )}
         {progress != null && me.goal !== 'maintain' && (

@@ -78,6 +78,13 @@
       "when": 1795099444311,
       "tag": "0010_water",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795099965727,
+      "tag": "0011_weekly_report",
+      "breakpoints": true
     }
   ]
 }
