@@ -28,7 +28,9 @@ FitPal: Telegram-бот и Telegram Mini App для подсчёта калор�
 
 - Относительные импорты в API и shared пишутся с расширением `.js` (NodeNext).
 - Без `any`. Если без него никак, используй `unknown` и сужай тип.
-- Входящие данные в контроллерах валидируй через `ZodPipe` и схему из `shared`.
+- Валидация входящих данных только через `nestjs-zod` (глобальный `ZodValidationPipe`). Без `class-validator`.
+- Каждый DTO в отдельном файле в папке `dto/` своего модуля: `users/dto/update-profile.dto.ts` с классом `UpdateProfileDto extends createZodDto(schema)`. Если схема нужна и Mini App, она лежит в `packages/shared`, а DTO только оборачивает её. Общие DTO (например, `UuidParamDto`) лежат в `common/dto/`.
+- Для body, query и params всегда используй DTO-класс, а не inline-типы.
 - Все эндпоинты Mini App защищены `TelegramAuthGuard` (`Authorization: tma <initData>`), текущий пользователь берётся через `@CurrentUser()`.
 - КБЖУ продуктов храним на 100 г. В записи дневника значения копируются на момент записи.
 - Тексты для пользователя на русском. Комментарии в коде на русском или английском, коротко и только там, где неочевидно «почему».
