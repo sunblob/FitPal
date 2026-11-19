@@ -296,6 +296,20 @@ textarea:focus {
   border-color: var(--accent-vivid);
 }
 
+/* iOS рисует поле времени нативной кнопкой с текстом по центру и вылезает за карточку */
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  min-height: 46px;
+  text-align: left;
+}
+
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 input[type='checkbox'] {
   width: 20px;
   height: 20px;
