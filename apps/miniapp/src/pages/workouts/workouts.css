@@ -407,3 +407,80 @@ label.wk-row {
     animation: none;
   }
 }
+
+/* --- Отметки «сделано» --- */
+.wk-ex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wk-ex-row + .wk-ex-row {
+  border-top: 1px solid var(--line);
+}
+.wk-check {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--surface-3);
+  color: transparent;
+}
+.wk-check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.wk-check:disabled {
+  opacity: 1;
+}
+.wk-done-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.wk-done-btn.on {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.wk-today {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wk-today-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wk-today-icon.done {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.wk-today-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wk-today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.wk-today-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}

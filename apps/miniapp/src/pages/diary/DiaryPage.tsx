@@ -11,6 +11,8 @@ import { CalorieRing } from '../../components/CalorieRing';
 import { Icon, type IconName } from '../../components/Icon';
 import { MacroBar } from '../../components/MacroBar';
 import { StepsCard } from '../../components/StepsCard';
+import { WorkoutToday } from '../../components/WorkoutToday';
+import { useWorkoutLog } from '../../lib/workoutLog';
 import { api, del, type Me } from '../../lib/api';
 import { formatDateRu } from '../../lib/profile';
 import { AddFoodSheet } from './AddFoodSheet';
@@ -47,6 +49,7 @@ export function DiaryPage({ me }: { me: Me }) {
   const [day, setDay] = useState<DiaryDayDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<MealType | null>(null);
+  const workout = useWorkoutLog(date);
 
   const load = useCallback(() => {
     api<DiaryDayDto>(`/diary?date=${date}`).then(setDay, (e: Error) => setError(e.message));
@@ -114,6 +117,10 @@ export function DiaryPage({ me }: { me: Me }) {
       </section>
 
       <StepsCard date={date} weightKg={me.weightKg} />
+
+      {workout.logs && workout.logs.length > 0 && (
+        <WorkoutToday logs={workout.logs} title="Тренировка" />
+      )}
 
       {error && <pre className="error">{error}</pre>}
 

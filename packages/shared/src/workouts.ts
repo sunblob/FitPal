@@ -174,3 +174,42 @@ export interface WorkoutPlanDto extends WorkoutPlanSummaryDto {
   }>;
   tips: string[];
 }
+
+/** Отметка «упражнение сделано» за день. Повторная отметка за тот же день обновляет подходы. */
+export const logExerciseSchema = z.object({
+  exerciseId: z.string().min(1).max(200),
+  /** Дата в формате YYYY-MM-DD, по умолчанию сегодня. */
+  date: z.iso.date().optional(),
+  /** Сколько подходов сделано, обычно берётся из плана. */
+  sets: z.number().int().min(1).max(20).optional(),
+  planId: z.uuid().optional(),
+});
+export type LogExercise = z.infer<typeof logExerciseSchema>;
+
+export interface ExerciseLogDto {
+  date: string;
+  exerciseId: string;
+  name: string;
+  sets: number | null;
+  planId: string | null;
+  doneAt: string;
+}
+
+/** Итоги тренировок за день: сколько упражнений и подходов отмечено. */
+export interface WorkoutDaySummary {
+  date: string;
+  exercises: number;
+  sets: number;
+}
+
+/** Сводка по дням из списка отметок, дни по возрастанию. */
+export function summarizeExerciseLogs(logs: ExerciseLogDto[]): WorkoutDaySummary[] {
+  const byDate = new Map<string, WorkoutDaySummary>();
+  for (const log of logs) {
+    const day = byDate.get(log.date) ?? { date: log.date, exercises: 0, sets: 0 };
+    day.exercises += 1;
+    day.sets += log.sets ?? 0;
+    byDate.set(log.date, day);
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
