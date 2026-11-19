@@ -56,13 +56,16 @@ const ru = {
     planLine: (from: number, to: number, weeks: number, date: string) =>
       `С ${from} до ${to} кг примерно за ${weeks} нед., к ${date}`,
     language: 'Язык',
-    reminders: 'Напоминание в боте',
-    remindersHint: 'Если к этому времени в дневнике за день ничего нет, бот напомнит записать еду.',
-    remindersOff: 'Не напоминать',
+    notifications: 'Уведомления в боте',
+    dailyReminder: 'Напоминать записать еду',
+    dailyReminderHint: 'Если к выбранному времени за день ничего не записано.',
+    weeklySummary: 'Итоги недели',
+    weeklySummaryHint: 'По воскресеньям: калории, БЖУ и вес за неделю.',
+    notificationTime: 'Во сколько присылать',
+    target: 'Норма',
     stepsKcal: 'Прибавлять к норме калории за шаги',
     stepsKcalHint:
       'Считаются шаги сверх обычных 5000 в день: обычная ходьба уже учтена в уровне активности.',
-    at: (hour: number) => `В ${hour}:00`,
   },
   diary: {
     prevDay: 'Предыдущий день',
@@ -357,13 +360,16 @@ const en: Dict = {
     planLine: (from, to, weeks, date) =>
       `From ${from} to ${to} kg in about ${weeks} ${enPlural(weeks, 'week', 'weeks')}, by ${date}`,
     language: 'Language',
-    reminders: 'Bot reminder',
-    remindersHint: 'If nothing is logged by this time, the bot will remind you to log your food.',
-    remindersOff: "Don't remind me",
+    notifications: 'Bot notifications',
+    dailyReminder: 'Remind me to log food',
+    dailyReminderHint: 'If nothing is logged for the day by the chosen time.',
+    weeklySummary: 'Weekly summary',
+    weeklySummaryHint: 'On Sundays: calories, macros and weight for the week.',
+    notificationTime: 'Send at',
+    target: 'Target',
     stepsKcal: 'Add calories from steps to my target',
     stepsKcalHint:
       'Only steps above the usual 5,000 a day count: everyday walking is already in your activity level.',
-    at: (hour) => `At ${hour}:00`,
   },
   diary: {
     prevDay: 'Previous day',

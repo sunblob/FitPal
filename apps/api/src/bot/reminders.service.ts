@@ -5,7 +5,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import { and, asc, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { addDays, averageOfLogged, macroShares, todayIn, weeklyChange } from '@fitpal/shared';
 import { GrammyError } from 'grammy';
 import { Env } from '../config/env.js';
@@ -57,7 +57,7 @@ export class RemindersService implements OnApplicationBootstrap, OnApplicationSh
       .from(users)
       .where(
         and(
-          isNotNull(users.reminderHour),
+          eq(users.dailyReminder, true),
           sql`extract(hour from now() at time zone ${tz}) >= ${users.reminderHour}`,
           sql`(${users.lastReminderOn} is null or ${users.lastReminderOn} < ${localToday})`,
           sql`not exists (select 1 from ${diaryEntries} where ${diaryEntries.userId} = ${users.id}
@@ -79,7 +79,7 @@ export class RemindersService implements OnApplicationBootstrap, OnApplicationSh
       .from(users)
       .where(
         and(
-          isNotNull(users.reminderHour),
+          eq(users.weeklySummary, true),
           sql`extract(isodow from now() at time zone ${tz}) = 7`,
           sql`extract(hour from now() at time zone ${tz}) >= ${users.reminderHour}`,
           sql`(${users.lastWeeklyReportOn} is null or ${users.lastWeeklyReportOn} < ${localToday})`,
@@ -152,7 +152,10 @@ export class RemindersService implements OnApplicationBootstrap, OnApplicationSh
     } catch (e) {
       // Пользователь заблокировал бота: больше не напоминаем
       if (e instanceof GrammyError && e.error_code === 403) {
-        await this.db.update(users).set({ reminderHour: null }).where(eq(users.id, user.id));
+        await this.db
+          .update(users)
+          .set({ dailyReminder: false, weeklySummary: false })
+          .where(eq(users.id, user.id));
       } else {
         this.logger.warn(`Reminder to ${user.id} failed: ${(e as Error).message}`);
       }

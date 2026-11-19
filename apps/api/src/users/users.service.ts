@@ -6,6 +6,7 @@ import {
   todayIn,
   type Language,
   type Profile,
+  type UpdateNotifications,
 } from '@fitpal/shared';
 import type { TelegramUser } from '../auth/init-data.js';
 import { DB, type Database } from '../db/db.module.js';
@@ -54,12 +55,8 @@ export class UsersService {
     return user!;
   }
 
-  async setReminders(userId: string, reminderHour: number | null): Promise<User> {
-    const [user] = await this.db
-      .update(users)
-      .set({ reminderHour })
-      .where(eq(users.id, userId))
-      .returning();
+  async setNotifications(userId: string, input: UpdateNotifications): Promise<User> {
+    const [user] = await this.db.update(users).set(input).where(eq(users.id, userId)).returning();
     return user!;
   }
 

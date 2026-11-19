@@ -3,7 +3,7 @@ import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import type { User } from '../db/schema.js';
 import { UpdateLanguageDto } from './dto/update-language.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
-import { UpdateRemindersDto } from './dto/update-reminders.dto.js';
+import { UpdateNotificationsDto } from './dto/update-notifications.dto.js';
 import { UpdateStepsKcalDto } from './dto/update-steps-kcal.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -22,9 +22,9 @@ export class UsersController {
     return this.users.updateProfile(user, body);
   }
 
-  @Put('reminders')
-  updateReminders(@CurrentUser() user: User, @Body() body: UpdateRemindersDto) {
-    return this.users.setReminders(user.id, body.reminderHour);
+  @Put('notifications')
+  updateNotifications(@CurrentUser() user: User, @Body() body: UpdateNotificationsDto) {
+    return this.users.setNotifications(user.id, body);
   }
 
   @Put('steps-kcal')

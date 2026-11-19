@@ -8,11 +8,16 @@ export const closeDaySchema = z.object({
 });
 export type CloseDay = z.infer<typeof closeDaySchema>;
 
-/** Час вечернего напоминания в боте по местному времени, null — напоминания выключены. */
-export const updateRemindersSchema = z.object({
-  reminderHour: z.number().int().min(0).max(23).nullable(),
-});
-export type UpdateReminders = z.infer<typeof updateRemindersSchema>;
+/** Уведомления бота: что присылать и в котором часу (по местному времени). */
+export const updateNotificationsSchema = z
+  .object({
+    dailyReminder: z.boolean(),
+    weeklySummary: z.boolean(),
+    reminderHour: z.number().int().min(0).max(23),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+export type UpdateNotifications = z.infer<typeof updateNotificationsSchema>;
 
 export const DEFAULT_REMINDER_HOUR = 20;
 
