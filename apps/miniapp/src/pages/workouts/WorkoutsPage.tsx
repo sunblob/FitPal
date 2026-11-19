@@ -8,9 +8,12 @@ import {
   type Muscle,
   type WorkoutPlanDto,
   type WorkoutPlanSummaryDto,
+  todayIn,
 } from '@fitpal/shared';
 import { Icon } from '../../components/Icon';
-import { api } from '../../lib/api';
+import { WorkoutToday } from '../../components/WorkoutToday';
+import { api, type Me } from '../../lib/api';
+import { useWorkoutLog } from '../../lib/workoutLog';
 import { ExerciseAnimation } from './ExerciseAnimation';
 import { PlanForm } from './PlanForm';
 import './workouts.css';
@@ -51,8 +54,10 @@ function errorMessage(e: unknown): string {
   return raw.startsWith('API ') ? 'Что-то пошло не так. Попробуй ещё раз.' : raw;
 }
 
-export function WorkoutsPage() {
+export function WorkoutsPage({ me }: { me: Me }) {
   const [view, setView] = useState<View>({ kind: 'list' });
+  const log = useWorkoutLog(todayIn(me.timezone));
+  const { reload: reloadLog } = log;
   const [plans, setPlans] = useState<WorkoutPlanSummaryDto[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +80,15 @@ export function WorkoutsPage() {
   }, [view.kind]);
 
   useEffect(() => {
+    if (view.kind === 'list') reloadLog();
+  }, [view.kind, reloadLog]);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
+
+  const toggleDone = (exerciseId: string, sets?: number, planId?: string) =>
+    run(() => log.toggle(exerciseId, { sets, planId }));
 
   const generate = (params: GenerateWorkoutPlan) =>
     run(async () => {
@@ -160,6 +172,23 @@ export function WorkoutsPage() {
             {view.dose.notes && <p className="wk-dose-notes">{view.dose.notes}</p>}
           </section>
         )}
+        {view.dose && (
+          <button
+            className={log.isDone(ex.id) ? 'wk-done-btn on' : 'wk-done-btn'}
+            disabled={busy || log.logs == null}
+            onClick={() =>
+              toggleDone(
+                ex.id,
+                view.dose?.sets,
+                view.back.kind === 'plan' ? view.back.plan.id : undefined,
+              )
+            }
+          >
+            <Icon name="check" size={20} />
+            {log.isDone(ex.id) ? 'Сделано сегодня' : 'Отметить выполненным'}
+          </button>
+        )}
+        {errorBox}
         <div className="chips">
           {ex.primaryMuscles.map((m) => (
             <span key={m} className="tag tag-accent">
@@ -234,30 +263,42 @@ export function WorkoutsPage() {
                 <h2 className="wk-day">{day.name}</h2>
                 {day.focus && <div className="muted small">{day.focus}</div>}
               </div>
-              <span className="muted small nowrap">{day.exercises.length} упр.</span>
+              <span className="muted small nowrap">
+                {day.exercises.some((i) => log.isDone(i.exercise.id))
+                  ? `${day.exercises.filter((i) => log.isDone(i.exercise.id)).length} из ${day.exercises.length}`
+                  : `${day.exercises.length} упр.`}
+              </span>
             </div>
             <div className="wk-ex-list">
               {day.exercises.map((item, ei) => (
-                <button className="wk-ex" key={ei} onClick={() => openExercise(item, view)}>
-                  <ExerciseAnimation
-                    images={item.exercise.images}
-                    alt={item.exercise.name}
-                    size="small"
-                  />
-                  <span className="wk-ex-text">
-                    <b>{item.exercise.name}</b>
-                    <span className="wk-ex-meta">
-                      <span className="tag tag-accent">
-                        {item.sets} × {item.reps}
+                <div className="wk-ex-row" key={ei}>
+                  <button className="wk-ex" onClick={() => openExercise(item, view)}>
+                    <ExerciseAnimation
+                      images={item.exercise.images}
+                      alt={item.exercise.name}
+                      size="small"
+                    />
+                    <span className="wk-ex-text">
+                      <b>{item.exercise.name}</b>
+                      <span className="wk-ex-meta">
+                        <span className="tag tag-accent">
+                          {item.sets} × {item.reps}
+                        </span>
+                        <span className="tag">отдых {item.restSec} с</span>
                       </span>
-                      <span className="tag">отдых {item.restSec} с</span>
+                      {item.notes && <span className="muted small">{item.notes}</span>}
                     </span>
-                    {item.notes && <span className="muted small">{item.notes}</span>}
-                  </span>
-                  <span className="wk-chevron" aria-hidden="true">
-                    <Icon name="forward" size={18} />
-                  </span>
-                </button>
+                  </button>
+                  <button
+                    className={log.isDone(item.exercise.id) ? 'wk-check on' : 'wk-check'}
+                    disabled={busy || log.logs == null}
+                    aria-pressed={log.isDone(item.exercise.id)}
+                    aria-label={`Сделано: ${item.exercise.name}`}
+                    onClick={() => toggleDone(item.exercise.id, item.sets, plan.id)}
+                  >
+                    <Icon name="check" size={18} />
+                  </button>
+                </div>
               ))}
             </div>
           </section>
@@ -284,6 +325,14 @@ export function WorkoutsPage() {
   return (
     <main className="screen">
       <h1>Тренировки</h1>
+      {log.logs && (
+        <WorkoutToday
+          logs={log.logs}
+          title="Сегодня"
+          showList
+          empty="Открой план и отмечай упражнения, которые сделал"
+        />
+      )}
       <section className="card wk-cta">
         <div className="wk-cta-icon">
           <Icon name="dumbbell" size={28} />

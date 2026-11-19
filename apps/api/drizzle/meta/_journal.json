@@ -29,6 +29,13 @@
       "when": 1795093412472,
       "tag": "0003_steps",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795093670337,
+      "tag": "0004_exercise_logs",
+      "breakpoints": true
     }
   ]
 }
