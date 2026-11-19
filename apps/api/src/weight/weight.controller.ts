@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { todayIn } from '@fitpal/shared';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import type { User } from '../db/schema.js';
 import { LogWeightDto } from './dto/log-weight.dto.js';
@@ -12,7 +13,7 @@ export class WeightController {
 
   @Post()
   log(@CurrentUser() user: User, @Body() body: LogWeightDto) {
-    return this.weight.log(user.id, body.weightKg, body.date);
+    return this.weight.log(user.id, body.weightKg, body.date ?? todayIn(user.timezone));
   }
 
   @Get()

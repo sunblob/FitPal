@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { dailyTarget, type Profile } from '@fitpal/shared';
+import { dailyTarget, todayIn, type Profile } from '@fitpal/shared';
 import type { TelegramUser } from '../auth/init-data.js';
 import { DB, type Database } from '../db/db.module.js';
 import { users, weightLogs, type User } from '../db/schema.js';
@@ -29,9 +29,10 @@ export class UsersService {
   }
 
   /** Сохраняет профиль, пересчитывает дневную норму и записывает вес за сегодня. */
-  async updateProfile(userId: string, profile: Profile): Promise<User> {
+  async updateProfile(current: User, profile: Profile): Promise<User> {
+    const userId = current.id;
     const target = dailyTarget(profile);
-    const date = new Date().toISOString().slice(0, 10);
+    const date = todayIn(profile.timezone ?? current.timezone);
     return this.db.transaction(async (tx) => {
       await tx
         .insert(weightLogs)

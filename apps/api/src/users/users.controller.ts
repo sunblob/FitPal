@@ -16,6 +16,6 @@ export class UsersController {
 
   @Put('profile')
   updateProfile(@CurrentUser() user: User, @Body() body: UpdateProfileDto) {
-    return this.users.updateProfile(user.id, body);
+    return this.users.updateProfile(user, body);
   }
 }

@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+function isValidTimezone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const sexSchema = z.enum(['male', 'female']);
 export type Sex = z.infer<typeof sexSchema>;
 
@@ -26,6 +35,8 @@ export const profileSchema = z.object({
   targetWeightKg: z.number().min(30).max(300).optional(),
   /** Желаемый темп, кг в неделю (0.25–1). */
   weeklyRateKg: z.number().min(0.1).max(1).optional(),
+  /** IANA-таймзона, чтобы правильно резать дни в дневнике. */
+  timezone: z.string().min(1).max(64).refine(isValidTimezone, 'Unknown timezone').optional(),
 });
 export type Profile = z.infer<typeof profileSchema>;
 
@@ -60,3 +71,70 @@ export const logWeightSchema = z.object({
   date: z.iso.date().optional(),
 });
 export type LogWeight = z.infer<typeof logWeightSchema>;
+
+export const MEAL_TYPES = mealTypeSchema.options;
+export const MEAL_LABELS_RU: Record<MealType, string> = {
+  breakfast: 'Завтрак',
+  lunch: 'Обед',
+  dinner: 'Ужин',
+  snack: 'Перекус',
+};
+
+export const ACTIVITY_LABELS_RU: Record<ActivityLevel, string> = {
+  sedentary: 'Сидячий образ жизни',
+  light: 'Лёгкая активность (1–3 тренировки в неделю)',
+  moderate: 'Средняя (3–5 тренировок)',
+  active: 'Высокая (6–7 тренировок)',
+  very_active: 'Очень высокая (физическая работа + спорт)',
+};
+
+export const GOAL_LABELS_RU: Record<Goal, string> = {
+  lose: 'Похудеть',
+  maintain: 'Держать вес',
+  gain: 'Набрать',
+};
+
+/** Дата дня в формате YYYY-MM-DD. */
+export const dayQuerySchema = z.object({
+  date: z.iso.date(),
+});
+export type DayQuery = z.infer<typeof dayQuerySchema>;
+
+export const createFoodSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  brand: z.string().trim().max(200).optional(),
+  barcode: z.string().trim().max(32).optional(),
+  per100g: nutrientsSchema,
+});
+export type CreateFood = z.infer<typeof createFoodSchema>;
+
+export const foodSearchQuerySchema = z.object({
+  q: z.string().trim().max(100).default(''),
+});
+export type FoodSearchQuery = z.infer<typeof foodSearchQuerySchema>;
+
+export interface FoodDto {
+  id: string;
+  name: string;
+  brand: string | null;
+  barcode: string | null;
+  source: FoodSource;
+  per100g: Nutrients;
+}
+
+export interface DiaryEntryDto {
+  id: string;
+  foodId: string | null;
+  name: string;
+  meal: MealType;
+  grams: number;
+  eatenAt: string;
+  nutrients: Nutrients;
+}
+
+export interface DiaryDayDto {
+  date: string;
+  target: Nutrients | null;
+  totals: Nutrients;
+  meals: Record<MealType, { entries: DiaryEntryDto[]; totals: Nutrients }>;
+}
