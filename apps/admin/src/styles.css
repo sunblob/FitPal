@@ -424,3 +424,194 @@ table.mini td {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ---- Телефон ---- */
+@media (max-width: 720px) {
+  /* 16px в полях, иначе iOS приближает страницу при фокусе */
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 40px;
+  }
+  button.link {
+    min-height: 0;
+    padding: 8px 0;
+  }
+
+  .topbar {
+    gap: 8px 12px;
+    padding: 10px 16px 0;
+  }
+  .brand {
+    flex: 1;
+  }
+  .who {
+    align-items: center;
+  }
+  /* Вкладки одной прокручиваемой строкой под заголовком */
+  .topbar nav {
+    order: 3;
+    flex: 0 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin: 0 -16px;
+    padding-inline: 16px;
+    scrollbar-width: none;
+  }
+  .topbar nav::-webkit-scrollbar {
+    display: none;
+  }
+  .topbar nav a {
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
+
+  main {
+    padding: 16px;
+  }
+
+  /* Обзор */
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .tile {
+    padding: 12px;
+  }
+  .tile-value {
+    font-size: 22px;
+  }
+  /* Иначе нескроллящиеся вкладки графика растягивают колонку сетки шире экрана */
+  .dashboard > *,
+  .card,
+  .card-head > * {
+    min-width: 0;
+  }
+  .seg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+  }
+  .seg button {
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  .bars {
+    height: 140px;
+    gap: 2px;
+  }
+  .bar-num {
+    display: none;
+  }
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  /* Таблицы превращаются в карточки */
+  .toolbar h1 {
+    flex: 1 0 100%;
+  }
+  .toolbar input[type='search'] {
+    flex: 1 0 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .toolbar select {
+    flex: 1;
+  }
+  .table-wrap {
+    background: none;
+    border: none;
+    overflow: visible;
+  }
+  .table-wrap table.data,
+  .table-wrap table.data tbody {
+    display: block;
+  }
+  .table-wrap table.data thead {
+    display: none;
+  }
+  .table-wrap table.data tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    margin-bottom: 10px;
+  }
+  .table-wrap tbody tr:hover {
+    background: var(--surface);
+  }
+  .table-wrap table.data td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    max-width: none;
+    white-space: normal;
+    text-align: right;
+    word-break: break-word;
+  }
+  .table-wrap table.data td::before {
+    content: attr(data-label);
+    color: var(--text-2);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .table-wrap table.data td.row-actions {
+    justify-content: flex-start;
+    gap: 20px;
+    border-bottom: none;
+    padding-top: 4px;
+  }
+  .table-wrap table.data td.row-actions::before,
+  .table-wrap table.data td.empty::before {
+    content: none;
+  }
+  .table-wrap table.data td.empty {
+    justify-content: center;
+    border: none;
+  }
+
+  .pager {
+    flex-wrap: wrap;
+  }
+  .pager .muted {
+    flex: 1 0 100%;
+  }
+
+  /* Диалог на весь экран, кнопки всегда видны снизу */
+  .overlay {
+    padding: 0;
+    place-items: stretch;
+  }
+  .dialog {
+    width: 100%;
+    max-height: none;
+    height: 100dvh;
+    border-radius: 0;
+    padding: 16px 16px 0;
+    align-content: start;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .dialog-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    margin: 0 -16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .dialog-actions button {
+    flex: 1;
+  }
+
+  .login-card {
+    padding: 24px 16px;
+  }
+}

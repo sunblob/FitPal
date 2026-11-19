@@ -249,7 +249,7 @@ export function ResourcePage({
       {error && <p className="error">{error}</p>}
 
       <div className="table-wrap">
-        <table>
+        <table className="data">
           <thead>
             <tr>
               {resource.columns.map((c) => (
@@ -264,7 +264,7 @@ export function ResourcePage({
             {data?.items.map((row) => (
               <tr key={row.id}>
                 {resource.columns.map((c) => (
-                  <td key={c.key} className={c.num ? 'num' : undefined}>
+                  <td key={c.key} className={c.num ? 'num' : undefined} data-label={c.label}>
                     {c.render ? c.render(row) : String(row[c.key] ?? '—')}
                   </td>
                 ))}
