@@ -270,8 +270,8 @@ function FoodSearch(props: {
           {items.map((f) => (
             <button key={f.id} className="food-row" onClick={() => props.onPick(f)}>
               <span className="food-name">
-                {f.name}
-                {f.brand && <span className="muted small">{f.brand}</span>}
+                <span className="food-title">{f.name}</span>
+                {f.brand && <span className="food-brand muted small">{f.brand}</span>}
               </span>
               <span className="food-kcal">
                 <b>{Math.round(f.per100g.kcal)}</b>

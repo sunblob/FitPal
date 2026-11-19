@@ -863,6 +863,22 @@ label.check input {
   min-width: 0;
 }
 
+/* Длинные названия из Open Food Facts: не больше двух строк */
+.food-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.food-brand {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .food-kcal {
   display: flex;
   flex-direction: column;
