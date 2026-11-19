@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PhotoRecognition, RecognizedFood } from '@fitpal/shared';
+import { L } from '../i18n';
 import { post } from '../lib/api';
 import { prepareImage } from '../lib/image';
 import { Icon } from './Icon';
@@ -29,7 +30,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
       });
       setState({ kind: 'result', preview, items: res.items, note: res.note });
     } catch (e) {
-      setError(aiErrorText(e, 'Не получилось распознать фото. Попробуй ещё раз.'));
+      setError(aiErrorText(e, L.ai.photoFailed));
       setState({ kind: 'pick' });
     }
   }
@@ -37,18 +38,18 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
   if (state.kind === 'pick') {
     return (
       <div className="sheet-body">
-        <p className="muted">Сфотографируй тарелку целиком. Я определю блюда и примерный вес.</p>
+        <p className="muted">{L.ai.photoIntro}</p>
         <label>
-          Подсказка (необязательно)
+          {L.ai.hint}
           <input
             value={hint}
             onChange={(e) => setHint(e.target.value)}
-            placeholder="Например: овсянка на воде, 300 г"
+            placeholder={L.ai.hintPlaceholder}
           />
         </label>
         <label className="file-button">
           <Icon name="camera" />
-          Сделать или выбрать фото
+          {L.ai.pickPhoto}
           <input type="file" accept="image/*" onChange={(e) => void onFile(e.target.files?.[0])} />
         </label>
         {error && <p className="error-text">{error}</p>}
@@ -60,7 +61,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
     return (
       <div className="sheet-body">
         <img className="photo-preview" src={state.preview} alt="" />
-        <p className="muted">Распознаю еду… Обычно это занимает несколько секунд.</p>
+        <p className="muted">{L.ai.recognizing}</p>
       </div>
     );
   }
@@ -68,9 +69,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
   return (
     <div className="sheet-body">
       <img className="photo-preview" src={state.preview} alt="" />
-      {state.items.length === 0 && (
-        <p className="muted">{state.note ?? 'Не нашёл еды на фото. Попробуй снять поближе.'}</p>
-      )}
+      {state.items.length === 0 && <p className="muted">{state.note ?? L.ai.noFoodPhoto}</p>}
       <RecognizedItems
         items={state.items}
         note={state.note}
@@ -78,7 +77,7 @@ export function PhotoRecognize(props: { onConfirm: (items: RecognizedFood[]) => 
         onConfirm={props.onConfirm}
       />
       <button className="ghost add" onClick={() => setState({ kind: 'pick' })}>
-        Другое фото
+        {L.ai.otherPhoto}
       </button>
     </div>
   );

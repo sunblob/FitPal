@@ -73,26 +73,6 @@ export const logWeightSchema = z.object({
 export type LogWeight = z.infer<typeof logWeightSchema>;
 
 export const MEAL_TYPES = mealTypeSchema.options;
-export const MEAL_LABELS_RU: Record<MealType, string> = {
-  breakfast: 'Завтрак',
-  lunch: 'Обед',
-  dinner: 'Ужин',
-  snack: 'Перекус',
-};
-
-export const ACTIVITY_LABELS_RU: Record<ActivityLevel, string> = {
-  sedentary: 'Сидячий образ жизни',
-  light: 'Лёгкая активность (1–3 тренировки в неделю)',
-  moderate: 'Средняя (3–5 тренировок)',
-  active: 'Высокая (6–7 тренировок)',
-  very_active: 'Очень высокая (физическая работа + спорт)',
-};
-
-export const GOAL_LABELS_RU: Record<Goal, string> = {
-  lose: 'Похудеть',
-  maintain: 'Держать вес',
-  gain: 'Набрать',
-};
 
 /** Дата дня в формате YYYY-MM-DD. */
 export const dayQuerySchema = z.object({

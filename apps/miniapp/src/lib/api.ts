@@ -1,4 +1,4 @@
-import type { ActivityLevel, Goal, Sex } from '@fitpal/shared';
+import type { ActivityLevel, Goal, Language, Sex } from '@fitpal/shared';
 import { getInitData } from './telegram';
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000';
@@ -27,6 +27,7 @@ export const del = (path: string) => api<void>(path, { method: 'DELETE' });
 export interface Me {
   id: string;
   firstName: string | null;
+  language: Language;
   sex: Sex | null;
   birthYear: number | null;
   heightCm: number | null;

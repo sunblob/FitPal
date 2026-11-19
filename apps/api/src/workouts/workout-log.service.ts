@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
-import type { ExerciseLogDto, LogExercise } from '@fitpal/shared';
+import type { ExerciseLogDto, Language, LogExercise } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
 import { exerciseLogs, exercises } from '../db/schema.js';
 
@@ -9,7 +9,11 @@ export class WorkoutLogService {
   constructor(@Inject(DB) private readonly db: Database) {}
 
   /** Отмечает упражнение сделанным за день. Повторная отметка обновляет подходы. */
-  async log(userId: string, input: LogExercise & { date: string }): Promise<ExerciseLogDto> {
+  async log(
+    userId: string,
+    input: LogExercise & { date: string },
+    lang: Language,
+  ): Promise<ExerciseLogDto> {
     const [exercise] = await this.db
       .select({ id: exercises.id })
       .from(exercises)
@@ -24,7 +28,7 @@ export class WorkoutLogService {
         target: [exerciseLogs.userId, exerciseLogs.date, exerciseLogs.exerciseId],
         set: values,
       });
-    const [row] = await this.list(userId, input.date, input.date, input.exerciseId);
+    const [row] = await this.list(userId, lang, input.date, input.date, input.exerciseId);
     return row!;
   }
 
@@ -42,6 +46,7 @@ export class WorkoutLogService {
 
   async list(
     userId: string,
+    lang: Language,
     from?: string,
     to?: string,
     exerciseId?: string,
@@ -69,7 +74,7 @@ export class WorkoutLogService {
       .orderBy(asc(exerciseLogs.date), asc(exerciseLogs.createdAt));
     return rows.map(({ nameEn, nameRu, doneAt, ...r }) => ({
       ...r,
-      name: nameRu ?? nameEn,
+      name: (lang === 'ru' && nameRu) || nameEn,
       doneAt: doneAt.toISOString(),
     }));
   }

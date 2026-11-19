@@ -1,6 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { dailyTarget, todayIn, type Profile } from '@fitpal/shared';
+import {
+  dailyTarget,
+  languageFromTelegram,
+  todayIn,
+  type Language,
+  type Profile,
+} from '@fitpal/shared';
 import type { TelegramUser } from '../auth/init-data.js';
 import { DB, type Database } from '../db/db.module.js';
 import { users, weightLogs, type User } from '../db/schema.js';
@@ -16,9 +22,10 @@ export class UsersService {
       firstName: tg.first_name ?? null,
       languageCode: tg.language_code ?? null,
     };
+    // Язык берём из Telegram только при регистрации: дальше его меняет сам пользователь
     const [user] = await this.db
       .insert(users)
-      .values(values)
+      .values({ ...values, language: languageFromTelegram(tg.language_code) })
       .onConflictDoUpdate({ target: users.telegramId, set: values })
       .returning();
     return user!;
@@ -26,6 +33,15 @@ export class UsersService {
 
   async findByTelegramId(telegramId: number): Promise<User | undefined> {
     return this.db.query.users.findFirst({ where: eq(users.telegramId, telegramId) });
+  }
+
+  async setLanguage(userId: string, language: Language): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set({ language })
+      .where(eq(users.id, userId))
+      .returning();
+    return user!;
   }
 
   /** Сохраняет профиль, пересчитывает дневную норму и записывает вес за сегодня. */

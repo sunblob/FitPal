@@ -15,6 +15,7 @@ export class RecognitionController {
     return this.recognition.recognize(
       user.id,
       { mediaType: body.mediaType, data: body.data },
+      user.language,
       body.hint,
     );
   }
@@ -22,11 +23,15 @@ export class RecognitionController {
   /** Таблица пищевой ценности с упаковки, для своего продукта со штрихкодом. */
   @Post('label')
   readLabel(@CurrentUser() user: User, @Body() body: RecognizePhotoDto) {
-    return this.recognition.readLabel(user.id, { mediaType: body.mediaType, data: body.data });
+    return this.recognition.readLabel(
+      user.id,
+      { mediaType: body.mediaType, data: body.data },
+      user.language,
+    );
   }
 
   @Post('text')
   recognizeText(@CurrentUser() user: User, @Body() body: RecognizeTextDto) {
-    return this.recognition.recognizeText(user.id, body.text);
+    return this.recognition.recognizeText(user.id, body.text, user.language);
   }
 }

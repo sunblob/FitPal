@@ -7,18 +7,33 @@ import {
   type CreateDiaryEntry,
   type DiaryDayDto,
   type DiaryEntryDto,
+  type Language,
   type MealType,
 } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
 import { diaryEntries, foods, type DiaryEntry, type User } from '../db/schema.js';
 
-type FoodLook = { imageUrl: string | null; category: string | null } | null;
+type FoodLook = {
+  name: string;
+  nameEn: string | null;
+  imageUrl: string | null;
+  category: string | null;
+} | null;
 
-function toEntryDto(e: DiaryEntry, food: FoodLook = null): DiaryEntryDto {
+/**
+ * Название в записи копируется на момент записи. Если запись сделана из справочника и не
+ * переименована, показываем название на текущем языке пользователя.
+ */
+function entryName(e: DiaryEntry, food: FoodLook, lang: Language): string {
+  if (!food?.nameEn || (e.name !== food.name && e.name !== food.nameEn)) return e.name;
+  return lang === 'en' ? food.nameEn : food.name;
+}
+
+function toEntryDto(e: DiaryEntry, food: FoodLook, lang: Language): DiaryEntryDto {
   return {
     id: e.id,
     foodId: e.foodId,
-    name: e.name,
+    name: entryName(e, food, lang),
     meal: e.meal,
     grams: e.grams,
     eatenAt: e.eatenAt.toISOString(),
@@ -39,14 +54,20 @@ export class DiaryService {
       .select({
         entry: diaryEntries,
         // id первым: drizzle решает, что left join пустой, по первому полю объекта
-        food: { id: foods.id, imageUrl: foods.imageUrl, category: foods.category },
+        food: {
+          id: foods.id,
+          name: foods.name,
+          nameEn: foods.nameEn,
+          imageUrl: foods.imageUrl,
+          category: foods.category,
+        },
       })
       .from(diaryEntries)
       .leftJoin(foods, eq(foods.id, diaryEntries.foodId))
       .where(and(eq(diaryEntries.userId, user.id), sql`${localDate} = ${date}::date`))
       .orderBy(asc(diaryEntries.eatenAt), asc(diaryEntries.createdAt));
 
-    const entries = rows.map((r) => toEntryDto(r.entry, r.food));
+    const entries = rows.map((r) => toEntryDto(r.entry, r.food, user.language));
     const meals = Object.fromEntries(
       MEAL_TYPES.map((meal) => {
         const list = entries.filter((e) => e.meal === meal);
@@ -72,7 +93,7 @@ export class DiaryService {
     };
   }
 
-  async add(userId: string, input: CreateDiaryEntry): Promise<DiaryEntryDto> {
+  async add(userId: string, input: CreateDiaryEntry, lang: Language): Promise<DiaryEntryDto> {
     const n = scaleNutrients(input.per100g, input.grams);
     const [entry] = await this.db
       .insert(diaryEntries)
@@ -86,12 +107,17 @@ export class DiaryService {
         ...(input.eatenAt ? { eatenAt: new Date(input.eatenAt) } : {}),
       })
       .returning();
-    if (!entry!.foodId) return toEntryDto(entry!);
+    if (!entry!.foodId) return toEntryDto(entry!, null, lang);
     const [food] = await this.db
-      .select({ imageUrl: foods.imageUrl, category: foods.category })
+      .select({
+        name: foods.name,
+        nameEn: foods.nameEn,
+        imageUrl: foods.imageUrl,
+        category: foods.category,
+      })
       .from(foods)
       .where(eq(foods.id, entry!.foodId));
-    return toEntryDto(entry!, food ?? null);
+    return toEntryDto(entry!, food ?? null, lang);
   }
 
   async remove(userId: string, id: string): Promise<void> {

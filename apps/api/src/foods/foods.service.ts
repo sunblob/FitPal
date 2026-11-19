@@ -6,7 +6,7 @@ import {
   type OnApplicationBootstrap,
 } from '@nestjs/common';
 import { and, desc, eq, isNull, like, or, sql } from 'drizzle-orm';
-import type { CreateFood, FoodDto } from '@fitpal/shared';
+import type { CreateFood, FoodDto, Language } from '@fitpal/shared';
 import { DB, type Database } from '../db/db.module.js';
 import { diaryEntries, foods, type Food } from '../db/schema.js';
 import { toFoodDto } from './foods.mapper.js';
@@ -52,30 +52,30 @@ export class FoodsService implements OnApplicationBootstrap {
    * кэш), затем Open Food Facts, если своих результатов мало. Найденное во внешней базе
    * кэшируется. Без запроса возвращает продукты, которые пользователь чаще всего добавлял.
    */
-  async search(userId: string, q: string): Promise<FoodDto[]> {
-    if (!q) return this.frequent(userId);
+  async search(userId: string, q: string, lang: Language): Promise<FoodDto[]> {
+    if (!q) return this.frequent(userId, lang);
 
-    const local = await this.searchLocal(userId, q);
+    const local = await this.searchLocal(userId, q, lang);
     if (q.length < REMOTE_MIN_QUERY || local.length >= REMOTE_BELOW) return local;
 
     const remote = await this.cache(await this.off.search(q, LIMIT - local.length));
     const seen = new Set(local.map((f) => f.id));
-    return [...local, ...remote.filter((f) => !seen.has(f.id)).map(toFoodDto)];
+    return [...local, ...remote.filter((f) => !seen.has(f.id)).map((f) => toFoodDto(f, lang))];
   }
 
   /** Продукт по штрихкоду: из кэша, иначе из Open Food Facts. */
-  async byBarcode(code: string): Promise<FoodDto> {
+  async byBarcode(code: string, lang: Language): Promise<FoodDto> {
     const cached = await this.db.query.foods.findFirst({ where: eq(foods.barcode, code) });
     if (cached) {
       // Кэш до появления картинок: подтягиваем фото в фоне, ответ не ждёт OFF
       if (cached.source === 'openfoodfacts' && !cached.imageUrl) void this.refreshImage(code);
-      return toFoodDto(cached);
+      return toFoodDto(cached, lang);
     }
 
     const product = await this.off.byBarcode(code);
     if (!product) throw new NotFoundException('Product not found');
     const [food] = await this.cache([product]);
-    return toFoodDto(food!);
+    return toFoodDto(food!, lang);
   }
 
   private async refreshImage(code: string): Promise<void> {
@@ -122,7 +122,7 @@ export class FoodsService implements OnApplicationBootstrap {
    * Порядок: название начинается с запроса, затем слово начинается с запроса, затем
    * вхождение где угодно; при равенстве справочник (в порядке файла), свои продукты, кэш OFF; короче выше.
    */
-  private async searchLocal(userId: string, q: string): Promise<FoodDto[]> {
+  private async searchLocal(userId: string, q: string, lang: Language): Promise<FoodDto[]> {
     const terms = queryTerms(q);
     if (terms.length === 0) return [];
     const first = escapeLike(terms[0]!);
@@ -151,10 +151,10 @@ export class FoodsService implements OnApplicationBootstrap {
         foods.name,
       )
       .limit(LIMIT);
-    return rows.map(toFoodDto);
+    return rows.map((f) => toFoodDto(f, lang));
   }
 
-  private async frequent(userId: string): Promise<FoodDto[]> {
+  private async frequent(userId: string, lang: Language): Promise<FoodDto[]> {
     const uses = sql<number>`count(${diaryEntries.id})`;
     const rows = await this.db
       .select({ food: foods, uses })
@@ -164,7 +164,7 @@ export class FoodsService implements OnApplicationBootstrap {
       .groupBy(foods.id)
       .orderBy(desc(uses))
       .limit(LIMIT);
-    return rows.map((r) => toFoodDto(r.food));
+    return rows.map((r) => toFoodDto(r.food, lang));
   }
 
   /**
@@ -172,13 +172,13 @@ export class FoodsService implements OnApplicationBootstrap {
    * по штрихкоду: следующий скан этого товара у любого пользователя найдёт его сразу.
    * В текстовом поиске он по-прежнему виден только владельцу.
    */
-  async create(userId: string, input: CreateFood): Promise<FoodDto> {
+  async create(userId: string, input: CreateFood, lang: Language): Promise<FoodDto> {
     if (input.barcode) {
       const existing = await this.db.query.foods.findFirst({
         where: eq(foods.barcode, input.barcode),
       });
       // Кто-то успел добавить этот штрихкод раньше: отдаём существующий продукт
-      if (existing) return toFoodDto(existing);
+      if (existing) return toFoodDto(existing, lang);
     }
     const [food] = await this.db
       .insert(foods)
@@ -193,11 +193,11 @@ export class FoodsService implements OnApplicationBootstrap {
       })
       .onConflictDoNothing({ target: foods.barcode })
       .returning();
-    if (food) return toFoodDto(food);
+    if (food) return toFoodDto(food, lang);
     // Гонка: тот же штрихкод вставили параллельно
     const winner = await this.db.query.foods.findFirst({
       where: eq(foods.barcode, input.barcode!),
     });
-    return toFoodDto(winner!);
+    return toFoodDto(winner!, lang);
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PhotoRecognition, RecognizedFood } from '@fitpal/shared';
+import { L } from '../i18n';
 import { post } from '../lib/api';
 import { Icon } from './Icon';
 import { RecognizedItems, aiErrorText } from './RecognizedItems';
@@ -27,7 +28,7 @@ export function TextRecognize(props: {
       const res = await post<PhotoRecognition>('/recognize/text', { text: text.trim() });
       setState({ kind: 'result', items: res.items, note: res.note });
     } catch (e) {
-      setError(aiErrorText(e, 'Не получилось посчитать. Попробуй ещё раз.'));
+      setError(aiErrorText(e, L.ai.textFailed));
       setState({ kind: 'input' });
     }
   }
@@ -36,15 +37,10 @@ export function TextRecognize(props: {
     return (
       <div className="sheet-body">
         <div className="ai-query">
-          <span className="muted small">Ты написал</span>
+          <span className="muted small">{L.ai.youWrote}</span>
           <span>{text.trim()}</span>
         </div>
-        {state.items.length === 0 && (
-          <p className="muted">
-            {state.note ??
-              'Не понял, что за еда. Опиши подробнее, например: «гречка 200 г и котлета».'}
-          </p>
-        )}
+        {state.items.length === 0 && <p className="muted">{state.note ?? L.ai.noFoodText}</p>}
         <RecognizedItems
           items={state.items}
           note={state.note}
@@ -52,7 +48,7 @@ export function TextRecognize(props: {
           onConfirm={props.onConfirm}
         />
         <button className="ghost add" onClick={() => setState({ kind: 'input' })}>
-          Изменить описание
+          {L.ai.editText}
         </button>
       </div>
     );
@@ -61,10 +57,7 @@ export function TextRecognize(props: {
   const loading = state.kind === 'loading';
   return (
     <div className="sheet-body">
-      <p className="muted">
-        Напиши, что ты съел, можно сразу несколько блюд. Если знаешь вес или количество, укажи их,
-        иначе я возьму обычную порцию.
-      </p>
+      <p className="muted">{L.ai.textIntro}</p>
       <textarea
         autoFocus
         rows={4}
@@ -72,11 +65,11 @@ export function TextRecognize(props: {
         value={text}
         disabled={loading}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Например: борщ со сметаной, два куска чёрного хлеба и чай с сахаром"
+        placeholder={L.ai.textPlaceholder}
       />
       <button className="primary ai-button" disabled={!valid || loading} onClick={submit}>
         <Icon name="sparkles" size={18} />
-        {loading ? 'Считаю…' : 'Посчитать КБЖУ'}
+        {loading ? L.ai.counting : L.ai.count}
       </button>
       {error && <p className="error-text">{error}</p>}
     </div>

@@ -15,13 +15,17 @@ export function normalize(s: string): string {
     .trim();
 }
 
-/** Текст, по которому ищется продукт: название, синонимы и бренд. Название идёт первым. */
+/**
+ * Текст, по которому ищется продукт: название, синонимы, английское название и бренд.
+ * Название идёт первым.
+ */
 export function buildSearchText(food: {
   name: string;
   brand?: string | null;
   aliases?: string | null;
+  nameEn?: string | null;
 }): string {
-  return normalize([food.name, food.aliases, food.brand].filter(Boolean).join(' '));
+  return normalize([food.name, food.aliases, food.nameEn, food.brand].filter(Boolean).join(' '));
 }
 
 const ENDING =

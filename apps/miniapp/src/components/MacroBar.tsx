@@ -1,3 +1,5 @@
+import { L } from '../i18n';
+
 export type MacroKind = 'protein' | 'fat' | 'carbs';
 
 /** Полоска прогресса по одному макронутриенту, цвет задаётся через kind. */
@@ -18,7 +20,7 @@ export function MacroBar(props: {
       </div>
       <div className="macro-value">
         <b>{Math.round(value)}</b>
-        <span className="muted">{target ? ` / ${target} г` : ' г'}</span>
+        <span className="muted">{target ? ` / ${target} ${L.common.g}` : ` ${L.common.g}`}</span>
       </div>
     </div>
   );

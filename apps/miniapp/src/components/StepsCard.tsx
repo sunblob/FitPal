@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_STEPS_GOAL, stepsKcal, type StepLogDto } from '@fitpal/shared';
+import { fmtNumber as fmt, L } from '../i18n';
 import { api, put } from '../lib/api';
 import { Icon } from './Icon';
-
-const fmt = (n: number) => n.toLocaleString('ru-RU');
 
 /** Шаги за выбранный день с ручным вводом. */
 export function StepsCard(props: { date: string; weightKg: number | null }) {
@@ -49,11 +48,11 @@ export function StepsCard(props: { date: string; weightKg: number | null }) {
           <Icon name="steps" size={18} />
         </span>
         <div className="steps-title">
-          <strong>Шаги</strong>
+          <strong>{L.steps.title}</strong>
           <span className="muted small">
             {current > 0
-              ? `≈ ${stepsKcal(current, props.weightKg)} ккал на ходьбу`
-              : `Цель ${fmt(DEFAULT_STEPS_GOAL)} в день`}
+              ? L.steps.walkingKcal(stepsKcal(current, props.weightKg))
+              : L.steps.goalPerDay(fmt(DEFAULT_STEPS_GOAL))}
           </span>
         </div>
         {!editing && (
@@ -63,7 +62,7 @@ export function StepsCard(props: { date: string; weightKg: number | null }) {
               setValue(current > 0 ? String(current) : '');
               setEditing(true);
             }}
-            aria-label="Изменить шаги"
+            aria-label={L.steps.edit}
           >
             {steps == null ? '—' : fmt(current)}
             <Icon name="pencil" size={14} />
@@ -81,14 +80,14 @@ export function StepsCard(props: { date: string; weightKg: number | null }) {
           <input
             inputMode="numeric"
             autoFocus
-            placeholder="Сколько шагов"
+            placeholder={L.steps.howMany}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && save()}
-            aria-label="Шаги"
+            aria-label={L.steps.title}
           />
           <button className="primary btn-inline" disabled={!valid || busy} onClick={save}>
-            Сохранить
+            {L.common.save}
           </button>
         </div>
       )}

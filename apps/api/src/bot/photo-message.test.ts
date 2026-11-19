@@ -35,3 +35,20 @@ test('formatRecognition uses text wording for descriptions', () => {
   assert.match(text, /• Борщ, 300 г: 150 ккал/);
   assert.match(formatRecognition({ items: [], note: null }, 'text'), /Опиши подробнее/);
 });
+
+test('formatRecognition speaks English', () => {
+  const text = formatRecognition(
+    {
+      items: [
+        { name: 'Borscht', grams: 300, per100g: { kcal: 50, protein: 2, fat: 2.5, carbs: 5 } },
+      ],
+      note: null,
+    },
+    'text',
+    'en',
+  );
+  assert.match(text, /^Here's how I counted it:/);
+  assert.match(text, /• Borscht, 300 g: 150 kcal/);
+  assert.match(text, /Total 150 kcal · P 6 · F 7.5 · C 15/);
+  assert.match(text, /Which meal\?$/);
+});

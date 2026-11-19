@@ -1,16 +1,6 @@
 import type { ExerciseLogDto } from '@fitpal/shared';
+import { L } from '../i18n';
 import { Icon } from './Icon';
-
-const plural = (n: number, one: string, few: string, many: string) => {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-  return many;
-};
-
-export const exercisesWord = (n: number) => plural(n, 'упражнение', 'упражнения', 'упражнений');
-export const setsWord = (n: number) => plural(n, 'подход', 'подхода', 'подходов');
 
 /** Сводка тренировки за день: сколько упражнений и подходов отмечено. */
 export function WorkoutToday(props: {
@@ -34,9 +24,8 @@ export function WorkoutToday(props: {
           <strong>{props.title}</strong>
           <span className="muted small">
             {logs.length > 0
-              ? `${logs.length} ${exercisesWord(logs.length)}` +
-                (sets > 0 ? ` · ${sets} ${setsWord(sets)}` : '')
-              : (props.empty ?? 'Пока ничего не отмечено')}
+              ? L.workouts.exercises(logs.length) + (sets > 0 ? ` · ${L.workouts.sets(sets)}` : '')
+              : (props.empty ?? L.workouts.nothingYet)}
           </span>
         </div>
       </div>
@@ -45,7 +34,9 @@ export function WorkoutToday(props: {
           {logs.map((l) => (
             <li key={l.exerciseId}>
               <span>{l.name}</span>
-              {l.sets != null && <span className="muted small nowrap">{l.sets} подх.</span>}
+              {l.sets != null && (
+                <span className="muted small nowrap">{L.workouts.setsShort(l.sets)}</span>
+              )}
             </li>
           ))}
         </ul>

@@ -15,12 +15,16 @@ export class WorkoutLogController {
 
   @Get()
   list(@CurrentUser() user: User, @Query() query: WorkoutLogQueryDto) {
-    return this.log.list(user.id, query.from, query.to);
+    return this.log.list(user.id, user.language, query.from, query.to);
   }
 
   @Put()
   done(@CurrentUser() user: User, @Body() body: LogExerciseDto) {
-    return this.log.log(user.id, { ...body, date: body.date ?? todayIn(user.timezone) });
+    return this.log.log(
+      user.id,
+      { ...body, date: body.date ?? todayIn(user.timezone) },
+      user.language,
+    );
   }
 
   @Delete()

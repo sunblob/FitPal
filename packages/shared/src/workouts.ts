@@ -22,26 +22,6 @@ export const muscleSchema = z.enum([
 ]);
 export type Muscle = z.infer<typeof muscleSchema>;
 
-export const MUSCLE_LABELS_RU: Record<Muscle, string> = {
-  abdominals: 'Пресс',
-  abductors: 'Отводящие бедра',
-  adductors: 'Приводящие бедра',
-  biceps: 'Бицепс',
-  calves: 'Икры',
-  chest: 'Грудь',
-  forearms: 'Предплечья',
-  glutes: 'Ягодицы',
-  hamstrings: 'Бицепс бедра',
-  lats: 'Широчайшие',
-  'lower back': 'Поясница',
-  'middle back': 'Середина спины',
-  neck: 'Шея',
-  quadriceps: 'Квадрицепс',
-  shoulders: 'Плечи',
-  traps: 'Трапеции',
-  triceps: 'Трицепс',
-};
-
 /** Инвентарь, доступный пользователю. «body only» есть всегда. */
 export const equipmentSchema = z.enum([
   'barbell',
@@ -58,29 +38,8 @@ export const equipmentSchema = z.enum([
 ]);
 export type Equipment = z.infer<typeof equipmentSchema>;
 
-export const EQUIPMENT_LABELS_RU: Record<Equipment | 'body only', string> = {
-  'body only': 'Свой вес',
-  barbell: 'Штанга',
-  dumbbell: 'Гантели',
-  kettlebells: 'Гири',
-  cable: 'Блочные тренажёры',
-  machine: 'Тренажёры',
-  bands: 'Резинки',
-  'medicine ball': 'Медбол',
-  'exercise ball': 'Фитбол',
-  'foam roll': 'Ролик',
-  'e-z curl bar': 'EZ-гриф',
-  other: 'Другое (турник, брусья, скамья)',
-};
-
 export const exerciseLevelSchema = z.enum(['beginner', 'intermediate', 'expert']);
 export type ExerciseLevel = z.infer<typeof exerciseLevelSchema>;
-
-export const LEVEL_LABELS_RU: Record<ExerciseLevel, string> = {
-  beginner: 'Новичок',
-  intermediate: 'Средний',
-  expert: 'Продвинутый',
-};
 
 export const workoutGoalSchema = z.enum([
   'strength',
@@ -90,14 +49,6 @@ export const workoutGoalSchema = z.enum([
   'general',
 ]);
 export type WorkoutGoal = z.infer<typeof workoutGoalSchema>;
-
-export const WORKOUT_GOAL_LABELS_RU: Record<WorkoutGoal, string> = {
-  hypertrophy: 'Набор мышц',
-  strength: 'Сила',
-  fat_loss: 'Похудение',
-  endurance: 'Выносливость',
-  general: 'Общая форма',
-};
 
 /** Запрос на генерацию плана тренировок. */
 export const generateWorkoutPlanSchema = z.object({
@@ -150,7 +101,7 @@ export interface ExerciseDto {
   secondaryMuscles: string[];
   /** Абсолютные URL картинок: начало и конец движения. */
   images: string[];
-  /** Инструкции на русском, если уже переведены, иначе на английском. */
+  /** Инструкции на языке пользователя; для русского, пока нет перевода, на английском. */
   instructions: string[];
   /** Язык `instructions`: 'en', пока русский перевод ещё не готов. */
   instructionsLang: 'ru' | 'en';

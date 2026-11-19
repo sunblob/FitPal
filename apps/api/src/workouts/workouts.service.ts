@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { and, desc, eq } from 'drizzle-orm';
 import {
   workoutPlanBodySchema,
+  type Language,
   type GenerateWorkoutPlan,
   type WorkoutPlanBody,
   type WorkoutPlanDto,
@@ -11,7 +12,7 @@ import { ClaudeService } from '../ai/claude.service.js';
 import { DB, type Database } from '../db/db.module.js';
 import { workoutPlans, type User, type WorkoutPlan } from '../db/schema.js';
 import { ExercisesService } from '../exercises/exercises.service.js';
-import { buildPlanPrompt, PLAN_SYSTEM } from './plan-prompt.js';
+import { buildPlanPrompt, planSystem } from './plan-prompt.js';
 
 /** Больше кандидатов только раздувает промпт: Claude всё равно берёт 4–8 упражнений на день. */
 const MAX_CANDIDATES = 300;
@@ -39,21 +40,25 @@ export class WorkoutsService {
 
     const body = await this.claude.parse({
       schema: workoutPlanBodySchema,
-      system: PLAN_SYSTEM,
+      system: planSystem(user.language),
       prompt: buildPlanPrompt(params, user, catalog),
       effort: 'medium',
     });
 
     const plan = this.sanitize(body, new Set(catalog.map((e) => e.id)));
     if (plan.days.every((d) => d.exercises.length === 0)) {
-      throw new BadRequestException('Не получилось составить план, попробуй изменить параметры');
+      throw new BadRequestException(
+        user.language === 'ru'
+          ? 'Не получилось составить план, попробуй изменить параметры'
+          : 'Could not build a plan, try changing the parameters',
+      );
     }
 
     const [row] = await this.db
       .insert(workoutPlans)
       .values({ userId: user.id, title: plan.title, params, plan })
       .returning();
-    return this.hydrate(row!);
+    return this.hydrate(row!, user.language);
   }
 
   async list(userId: string): Promise<WorkoutPlanSummaryDto[]> {
@@ -65,13 +70,13 @@ export class WorkoutsService {
     return rows.map((r) => this.summary(r));
   }
 
-  async get(userId: string, id: string): Promise<WorkoutPlanDto> {
+  async get(userId: string, id: string, lang: Language): Promise<WorkoutPlanDto> {
     const [row] = await this.db
       .select()
       .from(workoutPlans)
       .where(and(eq(workoutPlans.id, id), eq(workoutPlans.userId, userId)));
     if (!row) throw new NotFoundException();
-    return this.hydrate(row);
+    return this.hydrate(row, lang);
   }
 
   async remove(userId: string, id: string): Promise<void> {
@@ -109,11 +114,11 @@ export class WorkoutsService {
     };
   }
 
-  private async hydrate(row: WorkoutPlan): Promise<WorkoutPlanDto> {
+  private async hydrate(row: WorkoutPlan, lang: Language): Promise<WorkoutPlanDto> {
     const ids = row.plan.days.flatMap((d) => d.exercises.map((e) => e.exerciseId));
     const byId = await this.exercises.findByIds([...new Set(ids)]);
     // Пока пользователь смотрит план, переводим технику упражнений, у которых её ещё нет на русском.
-    this.exercises.prefetchInstructions([...byId.values()]);
+    if (lang === 'ru') this.exercises.prefetchInstructions([...byId.values()]);
     return {
       ...this.summary(row),
       params: row.params,
@@ -123,7 +128,7 @@ export class WorkoutsService {
         focus: day.focus,
         exercises: day.exercises.flatMap(({ exerciseId, ...rest }) => {
           const exercise = byId.get(exerciseId);
-          return exercise ? [{ ...rest, exercise: this.exercises.toDto(exercise) }] : [];
+          return exercise ? [{ ...rest, exercise: this.exercises.toDto(exercise, lang) }] : [];
         }),
       })),
     };

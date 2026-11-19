@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GOAL_LABELS_RU, addDays, todayIn, weightPlan } from '@fitpal/shared';
+import { GOAL_LABELS, addDays, todayIn, weightPlan } from '@fitpal/shared';
+import { getLanguage, L } from '../../i18n';
 import { api, post, type Me, type WeightLogDto } from '../../lib/api';
-import { formatDateRu, profileFromMe } from '../../lib/profile';
+import { formatDate, profileFromMe } from '../../lib/profile';
 import { StepsWeek } from './StepsWeek';
 import { WeightChart } from './WeightChart';
 
-const RANGES = [
-  { days: 30, label: 'Месяц' },
-  { days: 90, label: '3 месяца' },
-  { days: 365, label: 'Год' },
-];
+const RANGES = [30, 90, 365];
 
 export function WeightPage(props: { me: Me; onChanged: () => void }) {
   const { me } = props;
@@ -40,6 +37,7 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
     }
   }
 
+  const goalLabels = GOAL_LABELS[getLanguage()];
   const profile = profileFromMe(me);
   const plan = profile ? weightPlan(profile) : null;
   const first = logs[0];
@@ -67,31 +65,31 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
 
   return (
     <main className="screen">
-      <h1>Вес</h1>
+      <h1>{L.weight.title}</h1>
 
       <section className="card hero weight-hero">
         <div className="weight-now">
-          <div className="muted small">Текущий вес</div>
+          <div className="muted small">{L.weight.current}</div>
           <div className="display">
             {current ?? '—'}
-            <span className="unit"> кг</span>
+            <span className="unit"> {L.common.kg}</span>
           </div>
           {logs.length > 1 && (
             <span className={change <= 0 ? 'pill pill-good' : 'pill'}>
               {change > 0 ? '+' : change < 0 ? '−' : ''}
-              {Math.abs(change)} кг за период
+              {Math.abs(change)} {L.weight.forPeriod}
             </span>
           )}
         </div>
         {me.goal && (
           <div className="weight-goal">
-            <div className="muted small">Цель</div>
+            <div className="muted small">{L.weight.goal}</div>
             <div className="stat-value">
               {me.goal !== 'maintain' && me.targetWeightKg
-                ? `${me.targetWeightKg} кг`
-                : GOAL_LABELS_RU[me.goal]}
+                ? `${me.targetWeightKg} ${L.common.kg}`
+                : goalLabels[me.goal]}
             </div>
-            {toGo != null && <div className="muted small">ещё {toGo} кг</div>}
+            {toGo != null && <div className="muted small">{L.weight.toGo(toGo)}</div>}
           </div>
         )}
         {progress != null && me.goal !== 'maintain' && (
@@ -100,41 +98,43 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
               <div className="bar-fill" style={{ width: `${progress}%` }} />
             </div>
             <div className="goal-progress-labels muted small">
-              <span>{first?.weightKg} кг</span>
-              <span>{Math.round(progress)}% пути</span>
-              <span>{me.targetWeightKg} кг</span>
+              <span>
+                {first?.weightKg} {L.common.kg}
+              </span>
+              <span>{L.weight.progress(Math.round(progress))}</span>
+              <span>
+                {me.targetWeightKg} {L.common.kg}
+              </span>
             </div>
           </div>
         )}
       </section>
 
       <section className="card form">
-        <div className="card-title">
-          {loggedToday ? 'Обновить вес за сегодня' : 'Записать вес за сегодня'}
-        </div>
+        <div className="card-title">{loggedToday ? L.weight.update : L.weight.log}</div>
         <div className="inline">
           <input
             inputMode="decimal"
-            placeholder={loggedToday ? String(last.weightKg) : String(me.weightKg ?? 'кг')}
+            placeholder={loggedToday ? String(last.weightKg) : String(me.weightKg ?? L.common.kg)}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            aria-label="Вес, кг"
+            aria-label={L.weight.ariaWeight}
           />
           <button className="primary btn-inline" disabled={!valid || busy} onClick={save}>
-            Записать
+            {L.weight.logButton}
           </button>
         </div>
       </section>
 
       <section className="card">
         <div className="segmented">
-          {RANGES.map((r) => (
+          {RANGES.map((days) => (
             <button
-              key={r.days}
-              className={range === r.days ? 'on' : ''}
-              onClick={() => setRange(r.days)}
+              key={days}
+              className={range === days ? 'on' : ''}
+              onClick={() => setRange(days)}
             >
-              {r.label}
+              {L.weight.ranges[days]}
             </button>
           ))}
         </div>
@@ -146,11 +146,10 @@ export function WeightPage(props: { me: Me; onChanged: () => void }) {
       {plan && me.goal && (
         <section className="card plan-card">
           <div className="card-title">
-            {GOAL_LABELS_RU[me.goal]} до {plan.targetWeightKg} кг
+            {L.weight.planTitle(goalLabels[me.goal], plan.targetWeightKg)}
           </div>
           <p className="muted">
-            Темп {plan.weeklyRateKg} кг в неделю, примерно {plan.weeks} нед. Цель к{' '}
-            {formatDateRu(plan.etaDate)}
+            {L.weight.planLine(plan.weeklyRateKg, plan.weeks, formatDate(plan.etaDate))}
           </p>
         </section>
       )}

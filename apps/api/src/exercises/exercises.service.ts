@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, arrayOverlaps, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import type { Equipment, ExerciseDto, ExerciseLevel, Muscle } from '@fitpal/shared';
+import type { Equipment, ExerciseDto, ExerciseLevel, Language, Muscle } from '@fitpal/shared';
 import { ClaudeService } from '../ai/claude.service.js';
 import { Env } from '../config/env.js';
 import { DB, type Database } from '../db/db.module.js';
@@ -233,11 +233,14 @@ export class ExercisesService {
   /** Переводы инструкций, которые уже идут: карточка и фоновый прогрев не дублируют запрос. */
   private readonly inflight = new Map<string, Promise<Exercise>>();
 
-  /** Карточка упражнения. Если инструкции ещё нет на русском, переводит её и кэширует. */
-  async getDetails(id: string): Promise<ExerciseDto> {
+  /**
+   * Карточка упражнения. Для русского языка, если инструкции ещё нет на русском,
+   * переводит её и кэширует.
+   */
+  async getDetails(id: string, lang: Language): Promise<ExerciseDto> {
     const [row] = await this.db.select().from(exercises).where(eq(exercises.id, id));
     if (!row) throw new NotFoundException();
-    return this.toDto(await this.ensureInstructionsRu(row));
+    return this.toDto(lang === 'ru' ? await this.ensureInstructionsRu(row) : row, lang);
   }
 
   /**
@@ -292,9 +295,12 @@ export class ExercisesService {
     }
   }
 
-  toDto(row: Exercise): ExerciseDto {
-    const name = row.nameRu ?? row.nameEn;
-    const query = row.nameRu ? `${row.nameRu} техника выполнения` : `${row.nameEn} exercise form`;
+  toDto(row: Exercise, lang: Language): ExerciseDto {
+    const ru = lang === 'ru';
+    const name = (ru && row.nameRu) || row.nameEn;
+    const query =
+      ru && row.nameRu ? `${row.nameRu} техника выполнения` : `${row.nameEn} exercise form`;
+    const instructionsRu = ru ? row.instructionsRu : null;
     return {
       id: row.id,
       name,
@@ -305,8 +311,8 @@ export class ExercisesService {
       primaryMuscles: row.primaryMuscles,
       secondaryMuscles: row.secondaryMuscles,
       images: row.images.map((p) => new URL(p, this.env.EXERCISE_MEDIA_BASE_URL).toString()),
-      instructions: row.instructionsRu ?? row.instructionsEn,
-      instructionsLang: row.instructionsRu ? 'ru' : 'en',
+      instructions: instructionsRu ?? row.instructionsEn,
+      instructionsLang: instructionsRu ? 'ru' : 'en',
       youtubeUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
     };
   }

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { CurrentUser, TelegramAuthGuard } from '../auth/telegram-auth.guard.js';
 import type { User } from '../db/schema.js';
+import { UpdateLanguageDto } from './dto/update-language.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -17,5 +18,10 @@ export class UsersController {
   @Put('profile')
   updateProfile(@CurrentUser() user: User, @Body() body: UpdateProfileDto) {
     return this.users.updateProfile(user, body);
+  }
+
+  @Put('language')
+  updateLanguage(@CurrentUser() user: User, @Body() body: UpdateLanguageDto) {
+    return this.users.setLanguage(user.id, body.language);
   }
 }

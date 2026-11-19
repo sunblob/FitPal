@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  ACTIVITY_LABELS_RU,
-  GOAL_LABELS_RU,
+  ACTIVITY_LABELS,
+  GOAL_LABELS,
+  LANGUAGE_NAMES,
+  LANGUAGES,
   activityLevelSchema,
   dailyTarget,
   goalSchema,
@@ -9,14 +11,22 @@ import {
   weightPlan,
   type ActivityLevel,
   type Goal,
+  type Language,
   type Sex,
 } from '@fitpal/shared';
+import { getLanguage, L } from '../../i18n';
 import { put, type Me } from '../../lib/api';
-import { browserTimezone, formatDateRu, profileFromMe } from '../../lib/profile';
+import { browserTimezone, formatDate, profileFromMe } from '../../lib/profile';
 
 const RATES = [0.25, 0.5, 0.75, 1];
 
-export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboarding?: boolean }) {
+export function ProfilePage(props: {
+  me: Me;
+  onSaved: (me: Me) => void;
+  onLanguageChanged: (me: Me) => void;
+  onboarding?: boolean;
+}) {
+  const lang = getLanguage();
   const initial = profileFromMe(props.me);
   const [sex, setSex] = useState<Sex>(initial?.sex ?? 'male');
   const [birthYear, setBirthYear] = useState(String(initial?.birthYear ?? ''));
@@ -53,6 +63,15 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
     ((goal === 'lose' && parsed.data.targetWeightKg >= parsed.data.weightKg) ||
       (goal === 'gain' && parsed.data.targetWeightKg <= parsed.data.weightKg));
 
+  async function changeLanguage(language: Language) {
+    if (language === props.me.language) return;
+    try {
+      props.onLanguageChanged(await put<Me>('/me/language', { language }));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   async function save() {
     if (!parsed.success || wrongDirection) return;
     setSaving(true);
@@ -68,23 +87,36 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
 
   return (
     <main className="screen">
-      <h1>{props.onboarding ? 'Давай познакомимся' : 'Профиль и цель'}</h1>
-      {props.onboarding && (
-        <p className="muted">По этим данным я рассчитаю твою дневную норму калорий и план веса.</p>
-      )}
+      <h1>{props.onboarding ? L.profile.titleOnboarding : L.profile.title}</h1>
+      {props.onboarding && <p className="muted">{L.profile.onboardingHint}</p>}
 
-      <div className="section-label">О тебе</div>
+      <div className="section-label">{L.profile.language}</div>
+      <section className="card form">
+        <div className="segmented">
+          {LANGUAGES.map((l) => (
+            <button
+              key={l}
+              className={props.me.language === l ? 'on' : ''}
+              onClick={() => void changeLanguage(l)}
+            >
+              {LANGUAGE_NAMES[l]}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="section-label">{L.profile.aboutYou}</div>
       <section className="card form">
         <div className="segmented">
           {(['male', 'female'] as const).map((s) => (
             <button key={s} className={sex === s ? 'on' : ''} onClick={() => setSex(s)}>
-              {s === 'male' ? 'Мужчина' : 'Женщина'}
+              {s === 'male' ? L.profile.male : L.profile.female}
             </button>
           ))}
         </div>
         <div className="row3">
           <label>
-            Год рождения
+            {L.profile.birthYear}
             <input
               inputMode="numeric"
               value={birthYear}
@@ -93,7 +125,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
             />
           </label>
           <label>
-            Рост, см
+            {L.profile.height}
             <input
               inputMode="decimal"
               value={heightCm}
@@ -102,7 +134,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
             />
           </label>
           <label>
-            Вес, кг
+            {L.profile.weight}
             <input
               inputMode="decimal"
               value={weightKg}
@@ -112,33 +144,33 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
           </label>
         </div>
         <label>
-          Активность
+          {L.profile.activity}
           <select
             value={activityLevel}
             onChange={(e) => setActivity(e.target.value as ActivityLevel)}
           >
             {activityLevelSchema.options.map((a) => (
               <option key={a} value={a}>
-                {ACTIVITY_LABELS_RU[a]}
+                {ACTIVITY_LABELS[lang][a]}
               </option>
             ))}
           </select>
         </label>
       </section>
 
-      <div className="section-label">Цель</div>
+      <div className="section-label">{L.profile.goal}</div>
       <section className="card form">
         <div className="segmented">
           {goalSchema.options.map((g) => (
             <button key={g} className={goal === g ? 'on' : ''} onClick={() => setGoal(g)}>
-              {GOAL_LABELS_RU[g]}
+              {GOAL_LABELS[lang][g]}
             </button>
           ))}
         </div>
         {goal !== 'maintain' && (
           <>
             <label>
-              Целевой вес, кг
+              {L.profile.targetWeight}
               <input
                 inputMode="decimal"
                 value={targetWeightKg}
@@ -147,7 +179,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
               />
             </label>
             <div>
-              <div className="label">Темп, кг в неделю</div>
+              <div className="label">{L.profile.rate}</div>
               <div className="segmented">
                 {RATES.map((r) => (
                   <button
@@ -162,9 +194,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
             </div>
             {wrongDirection && (
               <p className="error-text">
-                {goal === 'lose'
-                  ? 'Целевой вес должен быть меньше текущего.'
-                  : 'Целевой вес должен быть больше текущего.'}
+                {goal === 'lose' ? L.profile.targetBelow : L.profile.targetAbove}
               </p>
             )}
           </>
@@ -173,20 +203,24 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
 
       {target && (
         <section className="card hero norm">
-          <div className="muted small">Твоя норма в день</div>
+          <div className="muted small">{L.profile.dailyNorm}</div>
           <div className="display">
             {target.kcal}
-            <span className="unit"> ккал</span>
+            <span className="unit"> {L.common.kcal}</span>
           </div>
           <div className="macro-pills">
-            <span className="macro-pill macro-protein">Белки {target.protein} г</span>
-            <span className="macro-pill macro-fat">Жиры {target.fat} г</span>
-            <span className="macro-pill macro-carbs">Углеводы {target.carbs} г</span>
+            <span className="macro-pill macro-protein">{L.profile.proteinG(target.protein)}</span>
+            <span className="macro-pill macro-fat">{L.profile.fatG(target.fat)}</span>
+            <span className="macro-pill macro-carbs">{L.profile.carbsG(target.carbs)}</span>
           </div>
           {plan && !wrongDirection && (
             <p className="plan-line muted">
-              С {plan.startWeightKg} до {plan.targetWeightKg} кг примерно за {plan.weeks} нед., к{' '}
-              {formatDateRu(plan.etaDate)}
+              {L.profile.planLine(
+                plan.startWeightKg,
+                plan.targetWeightKg,
+                plan.weeks,
+                formatDate(plan.etaDate),
+              )}
             </p>
           )}
         </section>
@@ -198,7 +232,7 @@ export function ProfilePage(props: { me: Me; onSaved: (me: Me) => void; onboardi
         disabled={!parsed.success || wrongDirection || saving}
         onClick={save}
       >
-        {saving ? 'Сохраняю…' : 'Сохранить'}
+        {saving ? L.common.saving : L.common.save}
       </button>
     </main>
   );

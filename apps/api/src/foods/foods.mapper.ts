@@ -1,10 +1,18 @@
-import type { FoodDto } from '@fitpal/shared';
+import type { FoodDto, Language } from '@fitpal/shared';
 import type { Food } from '../db/schema.js';
 
-export function toFoodDto(food: Food): FoodDto {
+/** Название продукта на языке пользователя: английское есть только у встроенного справочника. */
+export function localizedFoodName(
+  food: { name: string; nameEn: string | null },
+  lang: Language,
+): string {
+  return lang === 'en' && food.nameEn ? food.nameEn : food.name;
+}
+
+export function toFoodDto(food: Food, lang: Language): FoodDto {
   return {
     id: food.id,
-    name: food.name,
+    name: localizedFoodName(food, lang),
     brand: food.brand,
     barcode: food.barcode,
     source: food.source,

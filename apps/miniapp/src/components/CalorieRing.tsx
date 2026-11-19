@@ -1,3 +1,5 @@
+import { L } from '../i18n';
+
 const SIZE = 148;
 const STROKE = 12;
 const R = (SIZE - STROKE) / 2;
@@ -28,7 +30,7 @@ export function CalorieRing(props: { eaten: number; target: number | null }) {
       <div className="ring-center">
         <div className="ring-value">{left != null ? Math.abs(left) : Math.round(eaten)}</div>
         <div className="ring-caption">
-          {left == null ? 'ккал съедено' : over ? 'ккал сверх нормы' : 'ккал осталось'}
+          {left == null ? L.ring.eaten : over ? L.ring.over : L.ring.left}
         </div>
       </div>
     </div>
